@@ -6,12 +6,12 @@ import (
 )
 
 type Portfolio struct {
-	ID         int64   `json:"id"`
-	UserId     int64   `json:"user_id"`
-	Name       string  `json:"name"`
-	CreatedAt  string  `json:"created_at"`
-	UpdateedAt string  `json:"updated_at"`
-	Stocks     []Stock `json:"stocks"`
+	ID        int64   `json:"id"`
+	UserId    int64   `json:"user_id"`
+	Name      string  `json:"name"`
+	Stocks    []Stock `json:"stocks"`
+	CreatedAt string  `json:"created_at"`
+	UpdatedAt string  `json:"updated_at"`
 }
 
 type Stock struct {

@@ -16,8 +16,10 @@ type application struct {
 }
 
 type config struct {
-	addr string
-	db   dbConfig
+	addr    string
+	db      dbConfig
+	env     string
+	version string
 }
 
 type dbConfig struct {
@@ -43,7 +45,7 @@ func (app *application) mount() *chi.Mux {
 	r.Use(middleware.Timeout(60 * time.Second))
 
 	r.Route("/v1", func(r chi.Router) {
-		r.Get("/healtz", app.healthzCheckHandler)
+		r.Get("/healthz", app.healthzCheckHandler)
 
 	})
 

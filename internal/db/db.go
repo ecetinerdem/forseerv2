@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"time"
 
+	_ "github.com/lib/pq"
+
 	"github.com/ecetinerdem/forseerv2/internal/env"
 )
 

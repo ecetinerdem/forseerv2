@@ -1,0 +1,1 @@
+DROP TABLE IF NOT EXISTS portfolio_stocks;

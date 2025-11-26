@@ -10,7 +10,7 @@ type Storage struct {
 		Create(context.Context, *User) error
 	}
 	Portfolio interface {
-		Create(context.Context, *sql.Tx) error
+		Create(context.Context, *sql.Tx, *Portfolio) error
 	}
 	Stock interface {
 	}
