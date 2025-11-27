@@ -1,0 +1,102 @@
+package main
+
+import (
+	"errors"
+	"net/http"
+	"strconv"
+
+	"github.com/ecetinerdem/forseerv2/internal/store"
+	"github.com/go-chi/chi/v5"
+)
+
+type CreatePortfolioPayload struct {
+	Name   string        `json:"name"`
+	Stocks []store.Stock `json:"stocks,omitempty"`
+}
+
+func (app *application) createPortfolioHandler(w http.ResponseWriter, r *http.Request) {
+
+	userID := int64(1) // TODO: get from auth
+
+	var createPortfolio CreatePortfolioPayload
+
+	err := readJson(w, r, &createPortfolio)
+	if err != nil {
+		writeJsonError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	portfolio := &store.Portfolio{
+		//Change after auth
+		UserID: userID,
+		Name:   createPortfolio.Name,
+		Stocks: createPortfolio.Stocks,
+	}
+
+	ctx := r.Context()
+
+	err = app.store.Portfolio.CreatePortfolioWithStocks(ctx, portfolio)
+	if err != nil {
+		writeJsonError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	err = writeJson(w, http.StatusCreated, portfolio)
+	if err != nil {
+		writeJsonError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+}
+
+func (app *application) getPortfoliosHandler(w http.ResponseWriter, r *http.Request) {
+
+	userID := int64(1) // TODO: get from auth
+
+	ctx := r.Context()
+
+	portfolios, err := app.store.Portfolio.GetPortfolios(ctx, userID)
+
+	if err != nil {
+		writeJsonError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	err = writeJson(w, http.StatusOK, portfolios)
+	if err != nil {
+		writeJsonError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+}
+
+func (app *application) getPortfolioHandler(w http.ResponseWriter, r *http.Request) {
+
+	userID := int64(1) // TODO: get from auth
+
+	URLPortfolioID := chi.URLParam(r, "portfolioID")
+	portfolioID, err := strconv.ParseInt(URLPortfolioID, 10, 64)
+	if err != nil {
+		writeJsonError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	ctx := r.Context()
+
+	portfolio, err := app.store.Portfolio.GetPortfolioByID(ctx, userID, portfolioID)
+
+	if err != nil {
+		switch {
+		case errors.Is(err, store.ErrNotFound):
+			writeJsonError(w, http.StatusNotFound, err.Error())
+		default:
+			writeJsonError(w, http.StatusInternalServerError, err.Error())
+		}
+		return
+	}
+
+	err = writeJson(w, http.StatusOK, portfolio)
+	if err != nil {
+		writeJsonError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+}
