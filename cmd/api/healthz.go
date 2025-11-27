@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"net/http"
 )
 
@@ -14,6 +13,6 @@ func (app *application) healthzCheckHandler(w http.ResponseWriter, r *http.Reque
 
 	err := writeJson(w, http.StatusOK, data)
 	if err != nil {
-		log.Println(err.Error())
+		writeJsonError(w, http.StatusInternalServerError, err.Error())
 	}
 }
