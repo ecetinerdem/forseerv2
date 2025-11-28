@@ -14,6 +14,10 @@ type CreatePortfolioPayload struct {
 	Stocks []store.Stock `json:"stocks,omitempty"`
 }
 
+type UpdatePortfolioPayload struct {
+	Name string `json:"name" validate:"required,max=50"`
+}
+
 func (app *application) createPortfolioHandler(w http.ResponseWriter, r *http.Request) {
 
 	userID := int64(1) // TODO: get from auth
@@ -88,7 +92,7 @@ func (app *application) getPortfolioHandler(w http.ResponseWriter, r *http.Reque
 
 	ctx := r.Context()
 
-	portfolio, err := app.store.Portfolio.GetPortfolioByID(ctx, userID, portfolioID)
+	portfolio, err := app.store.Portfolio.GetPortfolioByID(ctx, portfolioID, userID)
 
 	if err != nil {
 		switch {
@@ -109,9 +113,82 @@ func (app *application) getPortfolioHandler(w http.ResponseWriter, r *http.Reque
 }
 
 func (app *application) updatePortfolioHandler(w http.ResponseWriter, r *http.Request) {
+	userID := int64(1) // TODO: get from auth
 
+	URLPortfolioID := chi.URLParam(r, "portfolioID")
+	portfolioID, err := strconv.ParseInt(URLPortfolioID, 10, 64)
+	if err != nil {
+		app.badRequestError(w, r, err)
+		return
+	}
+
+	ctx := r.Context()
+
+	var updatePortfolioPayload UpdatePortfolioPayload
+
+	err = readJson(w, r, &updatePortfolioPayload)
+	if err != nil {
+		app.badRequestError(w, r, err)
+		return
+	}
+
+	err = Validate.Struct(&updatePortfolioPayload)
+	if err != nil {
+		app.badRequestError(w, r, err)
+		return
+	}
+
+	portfolio, err := app.store.Portfolio.UpdatePortfolio(ctx, portfolioID, userID, updatePortfolioPayload.Name)
+
+	if err != nil {
+		switch {
+		case errors.Is(err, store.ErrNotFound):
+			app.notFoundError(w, r, err)
+		default:
+			app.internalServerError(w, r, err)
+		}
+		return
+	}
+
+	err = writeJson(w, http.StatusOK, portfolio)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
 }
 
 func (app *application) deletePortfolioHandler(w http.ResponseWriter, r *http.Request) {
+	userID := int64(1) // TODO: get from auth
 
+	URLPortfolioID := chi.URLParam(r, "portfolioID")
+	portfolioID, err := strconv.ParseInt(URLPortfolioID, 10, 64)
+	if err != nil {
+		app.badRequestError(w, r, err)
+		return
+	}
+
+	ctx := r.Context()
+
+	err = app.store.Portfolio.DeletePortfolio(ctx, portfolioID, userID)
+
+	if err != nil {
+		switch {
+		case errors.Is(err, store.ErrNotFound):
+			app.notFoundError(w, r, err)
+		default:
+			app.internalServerError(w, r, err)
+		}
+		return
+	}
+
+	type envelope struct {
+		Message string `json:"message"`
+	}
+
+	err = writeJson(w, http.StatusOK, &envelope{Message: "deleted"})
+
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
 }
