@@ -10,7 +10,7 @@ import (
 )
 
 type CreatePortfolioPayload struct {
-	Name   string        `json:"name"`
+	Name   string        `json:"name" validate:"required,max=50"`
 	Stocks []store.Stock `json:"stocks,omitempty"`
 }
 
@@ -22,7 +22,14 @@ func (app *application) createPortfolioHandler(w http.ResponseWriter, r *http.Re
 
 	err := readJson(w, r, &createPortfolio)
 	if err != nil {
-		writeJsonError(w, http.StatusBadRequest, err.Error())
+		app.badRequestError(w, r, err)
+		return
+	}
+
+	err = Validate.Struct(createPortfolio)
+
+	if err != nil {
+		app.badRequestError(w, r, err)
 		return
 	}
 
@@ -37,13 +44,13 @@ func (app *application) createPortfolioHandler(w http.ResponseWriter, r *http.Re
 
 	err = app.store.Portfolio.CreatePortfolioWithStocks(ctx, portfolio)
 	if err != nil {
-		writeJsonError(w, http.StatusInternalServerError, err.Error())
+		app.internalServerError(w, r, err)
 		return
 	}
 
 	err = writeJson(w, http.StatusCreated, portfolio)
 	if err != nil {
-		writeJsonError(w, http.StatusInternalServerError, err.Error())
+		app.internalServerError(w, r, err)
 		return
 	}
 }
@@ -57,13 +64,13 @@ func (app *application) getPortfoliosHandler(w http.ResponseWriter, r *http.Requ
 	portfolios, err := app.store.Portfolio.GetPortfolios(ctx, userID)
 
 	if err != nil {
-		writeJsonError(w, http.StatusInternalServerError, err.Error())
+		app.internalServerError(w, r, err)
 		return
 	}
 
 	err = writeJson(w, http.StatusOK, portfolios)
 	if err != nil {
-		writeJsonError(w, http.StatusInternalServerError, err.Error())
+		app.internalServerError(w, r, err)
 		return
 	}
 }
@@ -75,7 +82,7 @@ func (app *application) getPortfolioHandler(w http.ResponseWriter, r *http.Reque
 	URLPortfolioID := chi.URLParam(r, "portfolioID")
 	portfolioID, err := strconv.ParseInt(URLPortfolioID, 10, 64)
 	if err != nil {
-		writeJsonError(w, http.StatusBadRequest, err.Error())
+		app.badRequestError(w, r, err)
 		return
 	}
 
@@ -86,17 +93,25 @@ func (app *application) getPortfolioHandler(w http.ResponseWriter, r *http.Reque
 	if err != nil {
 		switch {
 		case errors.Is(err, store.ErrNotFound):
-			writeJsonError(w, http.StatusNotFound, err.Error())
+			app.notFoundError(w, r, err)
 		default:
-			writeJsonError(w, http.StatusInternalServerError, err.Error())
+			app.internalServerError(w, r, err)
 		}
 		return
 	}
 
 	err = writeJson(w, http.StatusOK, portfolio)
 	if err != nil {
-		writeJsonError(w, http.StatusInternalServerError, err.Error())
+		app.internalServerError(w, r, err)
 		return
 	}
+
+}
+
+func (app *application) updatePortfolioHandler(w http.ResponseWriter, r *http.Request) {
+
+}
+
+func (app *application) deletePortfolioHandler(w http.ResponseWriter, r *http.Request) {
 
 }
