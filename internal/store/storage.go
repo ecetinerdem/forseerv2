@@ -18,6 +18,7 @@ type Storage struct {
 		Create(context.Context, *sql.Tx, *Portfolio) error
 		CreatePortfolioWithStocks(context.Context, *Portfolio) error
 		GetPortfolios(context.Context, int64) ([]*Portfolio, error)
+		SearchPortfoliosByName(context.Context, int64, string) ([]*Portfolio, error)
 		GetPortfolioByID(context.Context, int64, int64) (*Portfolio, error)
 		UpdatePortfolio(context.Context, int64, int64, string) (*Portfolio, error)
 		DeletePortfolio(context.Context, int64, int64) error

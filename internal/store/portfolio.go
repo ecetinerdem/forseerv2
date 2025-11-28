@@ -114,6 +114,88 @@ func (ps *PortfolioStore) GetPortfolios(ctx context.Context, userID int64) ([]*P
 	return portfolios, nil
 }
 
+func (ps *PortfolioStore) SearchPortfoliosByName(ctx context.Context, userId int64, searchParam string) ([]*Portfolio, error) {
+
+	query := `
+		SELECT id, user_id, name, created_at, updated_at
+		FROM portfolios
+		WHERE user_id = $1 AND name ILIKE $2
+		ORDER BY updated_at DESC
+	`
+
+	searchPattern := "%" + searchParam + "%"
+
+	rows, err := ps.db.QueryContext(ctx, query, userId, searchPattern)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var portfolios []*Portfolio
+
+	for rows.Next() {
+		var p Portfolio
+
+		err = rows.Scan(
+			&p.ID,
+			&p.UserID,
+			&p.Name,
+			&p.CreatedAt,
+			&p.UpdatedAt,
+		)
+
+		if err != nil {
+			return nil, err
+		}
+
+		stockQuery := `
+			SELECT id, portfolio_id, symbol, shares, average_price, created_at, updated_at
+			FROM portfolio_stocks
+			WHERE portfolio_id = $1
+			ORDER BY symbol ASC
+		`
+
+		stockRows, err := ps.db.QueryContext(ctx, stockQuery, p.ID)
+
+		if err != nil {
+			return nil, err
+		}
+
+		p.Stocks = []Stock{}
+
+		for stockRows.Next() {
+			var stock Stock
+
+			err = stockRows.Scan(
+				&stock.ID,
+				&stock.PortfolioID,
+				&stock.Symbol,
+				&stock.Shares,
+				&stock.AveragePrice,
+				&stock.CreatedAt,
+				&stock.UpdatedAt,
+			)
+
+			if err != nil {
+				stockRows.Close()
+				return nil, err
+			}
+			stockRows.Close()
+			p.Stocks = append(p.Stocks, stock)
+		}
+		if err := stockRows.Err(); err != nil {
+			return nil, err
+		}
+		portfolios = append(portfolios, &p)
+
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return portfolios, nil
+}
+
 func (ps *PortfolioStore) GetPortfolioByID(ctx context.Context, portfolioID int64, userID int64) (*Portfolio, error) {
 
 	query := `
@@ -212,7 +294,7 @@ func (ps *PortfolioStore) UpdatePortfolio(ctx context.Context, portfolioID int64
 
 	stockQuery := `
 		SELECT id, portfolio_id, symbol, shares, average_price, created_at, updated_at
-		FROM stocks
+		FROM portfolio_stocks
 		WHERE portfolio_id = $1
 		ORDER BY symbol ASC
 	`

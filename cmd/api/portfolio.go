@@ -112,6 +112,31 @@ func (app *application) getPortfolioHandler(w http.ResponseWriter, r *http.Reque
 
 }
 
+func (app *application) searchPortfoliosHandler(w http.ResponseWriter, r *http.Request) {
+	userID := int64(1) // TODO: get from auth
+
+	searchParam := r.URL.Query().Get("q")
+
+	if searchParam == "" {
+		app.badRequestError(w, r, errors.New("search query parameter is required"))
+		return
+	}
+
+	ctx := r.Context()
+
+	portfolios, err := app.store.Portfolio.SearchPortfoliosByName(ctx, userID, searchParam)
+
+	if err != nil {
+		switch {
+		case errors.Is(err, store.ErrNotFound):
+			app.notFoundError(w, r, err)
+		default:
+			app.internalServerError(w, r, err)
+		}
+		return
+	}
+}
+
 func (app *application) updatePortfolioHandler(w http.ResponseWriter, r *http.Request) {
 	userID := int64(1) // TODO: get from auth
 
