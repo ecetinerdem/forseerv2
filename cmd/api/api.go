@@ -46,13 +46,13 @@ func (app *application) mount() *chi.Mux {
 
 	r.Route("/v1", func(r chi.Router) {
 		r.Get("/healthz", app.healthzCheckHandler)
-		r.Route("/portfolio", func(r chi.Router) {
+		r.Route("/portfolios", func(r chi.Router) {
 			r.Post("/", app.createPortfolioHandler)
 			r.Get("/", app.getPortfoliosHandler)
 			r.Get("/search", app.searchPortfoliosHandler)
 			r.Route("/{portfolioID}", func(r chi.Router) {
 				r.Get("/", app.getPortfolioHandler)
-				r.Put("/", app.updatePortfolioHandler)
+				r.Patch("/", app.updatePortfolioHandler)
 				r.Delete("/", app.deletePortfolioHandler)
 			})
 		})

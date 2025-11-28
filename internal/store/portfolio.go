@@ -131,7 +131,7 @@ func (ps *PortfolioStore) SearchPortfoliosByName(ctx context.Context, userId int
 	}
 	defer rows.Close()
 
-	var portfolios []*Portfolio
+	portfolios := []*Portfolio{}
 
 	for rows.Next() {
 		var p Portfolio

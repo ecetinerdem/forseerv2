@@ -115,7 +115,7 @@ func (app *application) getPortfolioHandler(w http.ResponseWriter, r *http.Reque
 func (app *application) searchPortfoliosHandler(w http.ResponseWriter, r *http.Request) {
 	userID := int64(1) // TODO: get from auth
 
-	searchParam := r.URL.Query().Get("q")
+	searchParam := r.URL.Query().Get("name")
 
 	if searchParam == "" {
 		app.badRequestError(w, r, errors.New("search query parameter is required"))
@@ -133,6 +133,21 @@ func (app *application) searchPortfoliosHandler(w http.ResponseWriter, r *http.R
 		default:
 			app.internalServerError(w, r, err)
 		}
+		return
+	}
+
+	if len(portfolios) == 0 {
+		err = writeJson(w, http.StatusOK, []interface{}{})
+		if err != nil {
+			app.internalServerError(w, r, err)
+		}
+		return
+	}
+
+	err = writeJson(w, http.StatusOK, portfolios)
+
+	if err != nil {
+		app.internalServerError(w, r, err)
 		return
 	}
 }
