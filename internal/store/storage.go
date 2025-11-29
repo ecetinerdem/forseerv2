@@ -4,10 +4,13 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"time"
 )
 
 var (
-	ErrNotFound = errors.New("resource not found")
+	ErrNotFound        = errors.New("resource not found")
+	ErrVersionConflict = errors.New("resource version conflict")
+	QueryTimeOut       = time.Second * 5
 )
 
 type Storage struct {
@@ -19,9 +22,9 @@ type Storage struct {
 		CreatePortfolioWithStocks(context.Context, *Portfolio) error
 		GetPortfolios(context.Context, int64) ([]*Portfolio, error)
 		SearchPortfoliosByName(context.Context, int64, string) ([]*Portfolio, error)
-		GetPortfolioByID(context.Context, int64, int64) (*Portfolio, error)
-		UpdatePortfolio(context.Context, int64, int64, string) (*Portfolio, error)
-		DeletePortfolio(context.Context, int64, int64) error
+		GetPortfolioByID(context.Context, int64) (*Portfolio, error)
+		UpdatePortfolio(context.Context, *Portfolio) (*Portfolio, error)
+		DeletePortfolio(context.Context, int64) error
 	}
 	Stock interface {
 	}

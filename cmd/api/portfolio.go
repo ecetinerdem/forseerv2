@@ -86,8 +86,6 @@ func (app *application) getPortfoliosHandler(w http.ResponseWriter, r *http.Requ
 
 func (app *application) getPortfolioHandler(w http.ResponseWriter, r *http.Request) {
 
-	userID := int64(1) // TODO: get from auth
-
 	URLPortfolioID := chi.URLParam(r, "portfolioID")
 	portfolioID, err := strconv.ParseInt(URLPortfolioID, 10, 64)
 	if err != nil {
@@ -97,7 +95,7 @@ func (app *application) getPortfolioHandler(w http.ResponseWriter, r *http.Reque
 
 	ctx := r.Context()
 
-	portfolio, err := app.store.Portfolio.GetPortfolioByID(ctx, portfolioID, userID)
+	portfolio, err := app.store.Portfolio.GetPortfolioByID(ctx, portfolioID)
 
 	if err != nil {
 		switch {
@@ -158,20 +156,13 @@ func (app *application) searchPortfoliosHandler(w http.ResponseWriter, r *http.R
 }
 
 func (app *application) updatePortfolioHandler(w http.ResponseWriter, r *http.Request) {
-	userID := int64(1) // TODO: get from auth
-
-	URLPortfolioID := chi.URLParam(r, "portfolioID")
-	portfolioID, err := strconv.ParseInt(URLPortfolioID, 10, 64)
-	if err != nil {
-		app.badRequestError(w, r, err)
-		return
-	}
+	portfolio := getPortfolioFromCtx(r)
 
 	ctx := r.Context()
 
 	var updatePortfolioPayload UpdatePortfolioPayload
 
-	err = readJson(w, r, &updatePortfolioPayload)
+	err := readJson(w, r, &updatePortfolioPayload)
 	if err != nil {
 		app.badRequestError(w, r, err)
 		return
@@ -183,19 +174,26 @@ func (app *application) updatePortfolioHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	portfolio, err := app.store.Portfolio.UpdatePortfolio(ctx, portfolioID, userID, updatePortfolioPayload.Name)
+	if updatePortfolioPayload.Name != "" {
+		portfolio.Name = updatePortfolioPayload.Name
+	}
+
+	updatedPortfolio, err := app.store.Portfolio.UpdatePortfolio(ctx, portfolio)
 
 	if err != nil {
 		switch {
 		case errors.Is(err, store.ErrNotFound):
 			app.notFoundError(w, r, err)
+		case errors.Is(err, store.ErrVersionConflict):
+			app.conflictError(w, r, err)
 		default:
 			app.internalServerError(w, r, err)
+
 		}
 		return
 	}
 
-	err = app.writeJsonResponse(w, http.StatusOK, portfolio)
+	err = app.writeJsonResponse(w, http.StatusOK, updatedPortfolio)
 	if err != nil {
 		app.internalServerError(w, r, err)
 		return
@@ -203,7 +201,6 @@ func (app *application) updatePortfolioHandler(w http.ResponseWriter, r *http.Re
 }
 
 func (app *application) deletePortfolioHandler(w http.ResponseWriter, r *http.Request) {
-	userID := int64(1) // TODO: get from auth
 
 	URLPortfolioID := chi.URLParam(r, "portfolioID")
 	portfolioID, err := strconv.ParseInt(URLPortfolioID, 10, 64)
@@ -214,7 +211,7 @@ func (app *application) deletePortfolioHandler(w http.ResponseWriter, r *http.Re
 
 	ctx := r.Context()
 
-	err = app.store.Portfolio.DeletePortfolio(ctx, portfolioID, userID)
+	err = app.store.Portfolio.DeletePortfolio(ctx, portfolioID)
 
 	if err != nil {
 		switch {
@@ -232,7 +229,7 @@ func (app *application) deletePortfolioHandler(w http.ResponseWriter, r *http.Re
 func (app *application) portfoliosContextMiddleware(next http.Handler) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		userID := int64(1) // TODO: get from auth
+
 		URLPortfolioID := chi.URLParam(r, "portfolioID")
 		portfolioID, err := strconv.ParseInt(URLPortfolioID, 10, 64)
 		if err != nil {
@@ -242,7 +239,7 @@ func (app *application) portfoliosContextMiddleware(next http.Handler) http.Hand
 
 		ctx := r.Context()
 
-		portfolio, err := app.store.Portfolio.GetPortfolioByID(ctx, portfolioID, userID)
+		portfolio, err := app.store.Portfolio.GetPortfolioByID(ctx, portfolioID)
 
 		if err != nil {
 			switch {

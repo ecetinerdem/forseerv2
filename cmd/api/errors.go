@@ -25,3 +25,10 @@ func (app *application) notFoundError(w http.ResponseWriter, r *http.Request, er
 
 	writeJsonError(w, http.StatusBadRequest, "not found")
 }
+
+func (app *application) conflictError(w http.ResponseWriter, r *http.Request, err error) {
+
+	log.Printf("resource conflict error: %s path: %s error: %s", r.Method, r.URL.Path, err.Error())
+
+	writeJsonError(w, http.StatusConflict, "the server encountered a conflict")
+}

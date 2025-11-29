@@ -1,0 +1,2 @@
+ALTER TABLE portfolios
+ADD COLUMN version INT DEFAULT 0;
