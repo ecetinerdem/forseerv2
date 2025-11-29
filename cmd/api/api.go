@@ -51,6 +51,7 @@ func (app *application) mount() *chi.Mux {
 			r.Get("/", app.getPortfoliosHandler)
 			r.Get("/search", app.searchPortfoliosHandler)
 			r.Route("/{portfolioID}", func(r chi.Router) {
+				r.Use(app.portfoliosContextMiddleware)
 				r.Get("/", app.getPortfolioHandler)
 				r.Patch("/", app.updatePortfolioHandler)
 				r.Delete("/", app.deletePortfolioHandler)

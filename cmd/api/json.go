@@ -37,3 +37,11 @@ func writeJsonError(w http.ResponseWriter, status int, message string) error {
 
 	return writeJson(w, status, &envelope{Error: message})
 }
+
+func (app *application) writeJsonResponse(w http.ResponseWriter, status int, data any) error {
+	type envelope struct {
+		Data any `json:"data"`
+	}
+
+	return writeJson(w, http.StatusOK, &envelope{Data: data})
+}

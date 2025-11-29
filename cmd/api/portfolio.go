@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"strconv"
@@ -8,6 +9,10 @@ import (
 	"github.com/ecetinerdem/forseerv2/internal/store"
 	"github.com/go-chi/chi/v5"
 )
+
+type portfolioKey string
+
+const portfolioCtx portfolioKey = "portfolio"
 
 type CreatePortfolioPayload struct {
 	Name   string        `json:"name" validate:"required,max=50"`
@@ -52,7 +57,7 @@ func (app *application) createPortfolioHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	err = writeJson(w, http.StatusCreated, portfolio)
+	err = app.writeJsonResponse(w, http.StatusCreated, portfolio)
 	if err != nil {
 		app.internalServerError(w, r, err)
 		return
@@ -72,7 +77,7 @@ func (app *application) getPortfoliosHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	err = writeJson(w, http.StatusOK, portfolios)
+	err = app.writeJsonResponse(w, http.StatusOK, portfolios)
 	if err != nil {
 		app.internalServerError(w, r, err)
 		return
@@ -104,7 +109,7 @@ func (app *application) getPortfolioHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	err = writeJson(w, http.StatusOK, portfolio)
+	err = app.writeJsonResponse(w, http.StatusOK, portfolio)
 	if err != nil {
 		app.internalServerError(w, r, err)
 		return
@@ -137,14 +142,14 @@ func (app *application) searchPortfoliosHandler(w http.ResponseWriter, r *http.R
 	}
 
 	if len(portfolios) == 0 {
-		err = writeJson(w, http.StatusOK, []interface{}{})
+		err = app.writeJsonResponse(w, http.StatusOK, []interface{}{})
 		if err != nil {
 			app.internalServerError(w, r, err)
 		}
 		return
 	}
 
-	err = writeJson(w, http.StatusOK, portfolios)
+	err = app.writeJsonResponse(w, http.StatusOK, portfolios)
 
 	if err != nil {
 		app.internalServerError(w, r, err)
@@ -190,7 +195,7 @@ func (app *application) updatePortfolioHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	err = writeJson(w, http.StatusOK, portfolio)
+	err = app.writeJsonResponse(w, http.StatusOK, portfolio)
 	if err != nil {
 		app.internalServerError(w, r, err)
 		return
@@ -221,14 +226,40 @@ func (app *application) deletePortfolioHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	type envelope struct {
-		Message string `json:"message"`
-	}
+	w.WriteHeader(http.StatusNoContent)
+}
 
-	err = writeJson(w, http.StatusOK, &envelope{Message: "deleted"})
+func (app *application) portfoliosContextMiddleware(next http.Handler) http.Handler {
 
-	if err != nil {
-		app.internalServerError(w, r, err)
-		return
-	}
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		userID := int64(1) // TODO: get from auth
+		URLPortfolioID := chi.URLParam(r, "portfolioID")
+		portfolioID, err := strconv.ParseInt(URLPortfolioID, 10, 64)
+		if err != nil {
+			app.badRequestError(w, r, err)
+			return
+		}
+
+		ctx := r.Context()
+
+		portfolio, err := app.store.Portfolio.GetPortfolioByID(ctx, portfolioID, userID)
+
+		if err != nil {
+			switch {
+			case errors.Is(err, store.ErrNotFound):
+				app.notFoundError(w, r, err)
+			default:
+				app.internalServerError(w, r, err)
+			}
+			return
+		}
+		ctx = context.WithValue(ctx, portfolioCtx, portfolio)
+		next.ServeHTTP(w, r)
+	})
+}
+
+func getPortfolioFromCtx(r *http.Request) *store.Portfolio {
+	portfolio, _ := r.Context().Value(portfolioCtx).(*store.Portfolio)
+
+	return portfolio
 }

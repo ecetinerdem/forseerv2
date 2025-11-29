@@ -11,6 +11,7 @@ type Portfolio struct {
 	UserID    int64   `json:"user_id"`
 	Name      string  `json:"name"`
 	Stocks    []Stock `json:"stocks"`
+	Version   int     `json:"version"`
 	CreatedAt string  `json:"created_at"`
 	UpdatedAt string  `json:"updated_at"`
 }
