@@ -39,7 +39,12 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	err = app.store.Us
+	ctx := r.Context()
+	err = app.store.Users.CreateAndInvite(ctx, user, "")
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
 
 	if err := app.writeJsonResponse(w, http.StatusCreated, nil); err != nil {
 		app.internalServerError(w, r, err)

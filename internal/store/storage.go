@@ -16,6 +16,7 @@ var (
 type Storage struct {
 	Users interface {
 		Create(context.Context, *User) error
+		CreateAndInvite(context.Context, *User, string) error
 		GetUserByID(context.Context, int64) (*User, error)
 	}
 	Portfolio interface {
