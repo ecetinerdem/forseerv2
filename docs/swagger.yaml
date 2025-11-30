@@ -94,6 +94,25 @@ definitions:
       updated_at:
         type: string
     type: object
+  store.User:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      first_name:
+        type: string
+      id:
+        type: integer
+      is_active:
+        type: boolean
+      last_name:
+        type: string
+      updated_at:
+        type: string
+      username:
+        type: string
+    type: object
 info:
   contact:
     email: forseerbussiness@gmail.com
@@ -345,6 +364,65 @@ paths:
       summary: Search portfolios by name
       tags:
       - portfolios
+  /users/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Fetches a user profile by ID
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/store.User'
+        "400":
+          description: Bad Request
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Fetches a user profile
+      tags:
+      - users
+  /users/activate/{token}:
+    put:
+      description: Activates/Register a user by invitation token
+      parameters:
+      - description: Invitation token
+        in: path
+        name: token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: User activated
+          schema:
+            type: string
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Activates/Register a user
+      tags:
+      - users
 securityDefinitions:
   ApiKeyAuth:
     in: header
