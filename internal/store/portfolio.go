@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+
+	"github.com/lib/pq"
 )
 
 type Portfolio struct {
@@ -398,4 +400,107 @@ func (ps *PortfolioStore) getPortfolioVersion(ctx context.Context, portfolioID i
 		return nil, err
 	}
 	return &currentVersion, nil
+}
+
+func (ps *PortfolioStore) AddStockToPortfolio(ctx context.Context, portfolioID int64, userID int64, stock *Stock) error {
+	return withTX(ps.db, ctx, func(tx *sql.Tx) error {
+
+		ctx, cancel := context.WithTimeout(ctx, QueryTimeOut)
+		defer cancel()
+
+		exist, err := ps.checkPortfolioExist(ctx, tx, portfolioID, userID)
+		if err != nil {
+			return err
+		}
+		if !exist {
+			return ErrNotFound
+		}
+
+		stockQuery := `
+			INSERT INTO portfolio_stocks (portfolio_id, symbol, shares, average_price)
+			VALUES ($1, $2, $3, $4)
+			RETURNING id, created_at, updated_at
+		`
+
+		err = tx.QueryRowContext(
+			ctx,
+			stockQuery,
+			stock.PortfolioID,
+			stock.Symbol,
+			stock.Shares,
+			stock.AveragePrice,
+		).Scan(
+			&stock.ID,
+			&stock.CreatedAt,
+			&stock.UpdatedAt,
+		)
+
+		if err != nil {
+			var pqErr *pq.Error
+
+			if errors.As(err, &pqErr) && pqErr.Code == "23505" {
+				return ErrDuplicateStock
+			}
+			return err
+		}
+
+		portfolioQuery := `
+			UPDATE portfolios
+			SET updated_at = NOW()
+			WHERE id = $1
+		`
+
+		_, err = tx.ExecContext(ctx, portfolioQuery, portfolioID)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+
+}
+
+func (ps *PortfolioStore) UpdateStockToPortfolio(ctx context.Context, portfolioID int64, userID int64, stock *Stock) error {
+
+	return withTX(ps.db, ctx, func(tx *sql.Tx) error {
+		ctx, cancel := context.WithTimeout(ctx, QueryTimeOut)
+		defer cancel()
+		exist, err := ps.checkPortfolioExist(ctx, tx, portfolioID, userID)
+		if err != nil {
+			return err
+		}
+		if !exist {
+			return ErrNotFound
+		}
+
+		return nil
+	})
+}
+
+func (ps *PortfolioStore) DeleteStockFromPortfolio(ctx context.Context, portfolioID int64, userID int64, stock *Stock) error {
+
+	return withTX(ps.db, ctx, func(tx *sql.Tx) error {
+		ctx, cancel := context.WithTimeout(ctx, QueryTimeOut)
+		defer cancel()
+		exist, err := ps.checkPortfolioExist(ctx, tx, portfolioID, userID)
+		if err != nil {
+			return err
+		}
+		if !exist {
+			return ErrNotFound
+		}
+		return nil
+	})
+}
+
+func (ps *PortfolioStore) checkPortfolioExist(ctx context.Context, tx *sql.Tx, portfolioID int64, userID int64) (bool, error) {
+	var exists bool
+	checkQuery := `SELECT EXISTS(SELECT 1 FROM portfolios WHERE id = $1 AND user_id = $2)`
+	err := tx.QueryRowContext(ctx, checkQuery, portfolioID, userID).Scan(&exists)
+	if err != nil {
+		return false, err
+	}
+	if !exists {
+		return false, ErrNotFound
+	}
+	return exists, nil
 }

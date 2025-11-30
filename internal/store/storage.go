@@ -12,6 +12,7 @@ var (
 	ErrVersionConflict   = errors.New("resource version conflict")
 	ErrDuplicateEmail    = errors.New("duplicate email")
 	ErrDuplicateUsername = errors.New("duplicate username")
+	ErrDuplicateStock    = errors.New("stock already exists in portfolio")
 
 	QueryTimeOut = time.Second * 5
 )
@@ -32,8 +33,13 @@ type Storage struct {
 		GetPortfolioByID(context.Context, int64) (*Portfolio, error)
 		UpdatePortfolio(context.Context, *Portfolio) (*Portfolio, error)
 		DeletePortfolio(context.Context, int64) error
+
+		//stock management
+		AddStockToPortfolio(context.Context, int64, int64, *Stock) error
+		UpdateStockToPortfolio(context.Context, int64, int64, *Stock) error
+		DeleteStockFromPortfolio(context.Context, int64, int64, *Stock) error
 	}
-	Stock interface {
+	Stocks interface {
 	}
 }
 
@@ -41,6 +47,7 @@ func NewStorage(db *sql.DB) *Storage {
 	return &Storage{
 		Users:     &UserStore{db},
 		Portfolio: &PortfolioStore{db},
+		Stocks:    &StockStore{db},
 	}
 }
 
