@@ -94,9 +94,27 @@ func (app *application) getPortfoliosHandler(w http.ResponseWriter, r *http.Requ
 
 	userID := int64(1) // TODO: get from auth
 
+	pfq := &store.PaginatedFeedQuery{
+		Limit:  5,
+		Offset: 0,
+		Sort:   "desc",
+	}
+
+	pfq, err := pfq.Parse(r)
+	if err != nil {
+		app.badRequestError(w, r, err)
+		return
+	}
+
+	err = Validate.Struct(pfq)
+	if err != nil {
+		app.badRequestError(w, r, err)
+		return
+	}
+
 	ctx := r.Context()
 
-	portfolios, err := app.store.Portfolio.GetPortfolios(ctx, userID)
+	portfolios, err := app.store.Portfolio.GetPortfolios(ctx, userID, pfq)
 
 	if err != nil {
 		app.internalServerError(w, r, err)

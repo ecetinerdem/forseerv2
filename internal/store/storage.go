@@ -28,7 +28,7 @@ type Storage struct {
 	Portfolio interface {
 		Create(context.Context, *sql.Tx, *Portfolio) error
 		CreatePortfolioWithStocks(context.Context, *Portfolio) error
-		GetPortfolios(context.Context, int64) ([]*Portfolio, error)
+		GetPortfolios(context.Context, int64, *PaginatedFeedQuery) ([]*Portfolio, error)
 		SearchPortfoliosByName(context.Context, int64, string) ([]*Portfolio, error)
 		GetPortfolioByID(context.Context, int64) (*Portfolio, error)
 		UpdatePortfolio(context.Context, *Portfolio) (*Portfolio, error)

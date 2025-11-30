@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 
 	"github.com/lib/pq"
 )
@@ -70,19 +71,23 @@ func (ps *PortfolioStore) CreatePortfolioWithStocks(ctx context.Context, portfol
 	})
 }
 
-func (ps *PortfolioStore) GetPortfolios(ctx context.Context, userID int64) ([]*Portfolio, error) {
+func (ps *PortfolioStore) GetPortfolios(ctx context.Context, userID int64, pfq *PaginatedFeedQuery) ([]*Portfolio, error) {
 
-	query := `
+	query := fmt.Sprintf(
+		`
 		SELECT id, user_id, name, created_at, updated_at 
 		FROM portfolios
 		WHERE user_id = $1
-		ORDER BY updated_at DESC
-	`
+		ORDER BY updated_at %s
+		LIMIT $2 OFFSET $3
+	`,
+		pfq.Sort,
+	)
 
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeOut)
 	defer cancel()
 
-	rows, err := ps.db.QueryContext(ctx, query, userID)
+	rows, err := ps.db.QueryContext(ctx, query, userID, pfq.Limit, pfq.Offset)
 
 	if err != nil {
 		return nil, err
