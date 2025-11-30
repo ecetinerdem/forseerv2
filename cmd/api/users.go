@@ -40,3 +40,26 @@ func (app *application) getUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+
+func (app *application) activateUserHandler(w http.ResponseWriter, r *http.Request) {
+	token := chi.URLParam(r, "token")
+
+	ctx := r.Context()
+	err := app.store.Users.Activate(ctx, token)
+
+	if err != nil {
+		switch {
+		case errors.Is(err, store.ErrNotFound):
+			app.notFoundError(w, r, err)
+		default:
+			app.internalServerError(w, r, err)
+		}
+		return
+	}
+
+	err = app.writeJsonResponse(w, http.StatusNoContent, "")
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+}

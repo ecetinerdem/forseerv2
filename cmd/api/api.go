@@ -53,9 +53,14 @@ func (app *application) mount() *chi.Mux {
 		r.Get("/healthz", app.healthzCheckHandler)
 
 		r.Route("/users", func(r chi.Router) {
+			r.Route("/activate/{token}", app.activateUserHandler)
 			r.Route("/{userID}", func(r chi.Router) {
 				r.Get("/", app.getUserHandler)
 			})
+		})
+		//Only Public Route
+		r.Route("/authentication", func(r chi.Router) {
+			r.Post("/user", app.registerUserHandler)
 		})
 
 		r.Route("/portfolios", func(r chi.Router) {
@@ -68,11 +73,6 @@ func (app *application) mount() *chi.Mux {
 				r.Patch("/", app.updatePortfolioHandler)
 				r.Delete("/", app.deletePortfolioHandler)
 			})
-		})
-
-		//Only Public Route
-		r.Route("/authentication", func(r chi.Router) {
-			r.Post("/user", app.registerUserHandler)
 		})
 
 	})

@@ -20,6 +20,7 @@ type Storage struct {
 	Users interface {
 		Create(context.Context, *sql.Tx, *User) error
 		CreateAndInvite(context.Context, *User, string, time.Duration) error
+		Activate(context.Context, string) error
 		GetUserByID(context.Context, int64) (*User, error)
 	}
 	Portfolio interface {

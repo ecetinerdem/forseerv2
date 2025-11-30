@@ -1,16 +1,24 @@
 package main
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"net/http"
 
 	"github.com/ecetinerdem/forseerv2/internal/store"
+	"github.com/google/uuid"
 )
 
 type RegisterUserpayload struct {
 	Username string `json:"username" validate:"required,max=100"`
 	Email    string `json:"email" validate:"required,max=255"`
 	Password string `json:"password" validate:"required,min=8,max=16"`
+}
+
+type UserWithToken struct {
+	*store.User
+	Token string `json:"token"`
 }
 
 func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Request) {
@@ -41,7 +49,11 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 	}
 
 	ctx := r.Context()
-	err = app.store.Users.CreateAndInvite(ctx, user, "", app.config.mail.expiry)
+
+	plainToken := uuid.New().String()
+	hash := sha256.Sum256([]byte(plainToken))
+	hashCode := hex.EncodeToString(hash[:])
+	err = app.store.Users.CreateAndInvite(ctx, user, hashCode, app.config.mail.expiry)
 	if err != nil {
 		switch {
 		case errors.Is(err, store.ErrDuplicateEmail):
@@ -53,8 +65,12 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 		}
 		return
 	}
+	userWithToken := UserWithToken{
+		User:  user,
+		Token: plainToken,
+	}
 
-	if err := app.writeJsonResponse(w, http.StatusCreated, nil); err != nil {
+	if err := app.writeJsonResponse(w, http.StatusCreated, userWithToken); err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}

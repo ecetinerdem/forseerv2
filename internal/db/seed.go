@@ -35,7 +35,6 @@ func generateUsers(numUsers int) []*store.User {
 			LastName:  SeedUsers[i].LastName,
 			Username:  SeedUsers[i].Username,
 			Email:     SeedUsers[i].Email,
-			Password:  SeedUsers[i].Password,
 		}
 
 	}
