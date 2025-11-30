@@ -459,9 +459,10 @@ func (ps *PortfolioStore) AddStockToPortfolio(ctx context.Context, portfolioID i
 
 }
 
-func (ps *PortfolioStore) UpdateStockToPortfolio(ctx context.Context, portfolioID int64, userID int64, stock *Stock) error {
+func (ps *PortfolioStore) UpdateStockToPortfolio(ctx context.Context, portfolioID int64, userID int64, stock *Stock) (*Stock, error) {
 
-	return withTX(ps.db, ctx, func(tx *sql.Tx) error {
+	var updatedStock Stock
+	err := withTX(ps.db, ctx, func(tx *sql.Tx) error {
 		ctx, cancel := context.WithTimeout(ctx, QueryTimeOut)
 		defer cancel()
 		exist, err := ps.checkPortfolioExist(ctx, tx, portfolioID, userID)
@@ -472,8 +473,45 @@ func (ps *PortfolioStore) UpdateStockToPortfolio(ctx context.Context, portfolioI
 			return ErrNotFound
 		}
 
+		stockQuery := `
+			UPDATE portfolio_stocks
+			SET shares = $1, average_price = $2, updated_at = NOW()
+			WHERE portfolio_id = $3 AND symbol = $4
+			RETURNING id, portfolio_id, symbol, shares, average_price created_at, updated_at
+		`
+
+		err = tx.QueryRowContext(
+			ctx,
+			stockQuery,
+			stock.Shares,
+			stock.AveragePrice,
+			stock.PortfolioID,
+			stock.Symbol,
+		).Scan(
+			&stock.ID,
+			&stock.PortfolioID,
+			&stock.Symbol,
+			&stock.Shares,
+			&stock.AveragePrice,
+			&stock.CreatedAt,
+			&stock.UpdatedAt,
+		)
+
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return ErrNotFound
+			}
+			return err
+		}
+
 		return nil
 	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &updatedStock, nil
 }
 
 func (ps *PortfolioStore) DeleteStockFromPortfolio(ctx context.Context, portfolioID int64, userID int64, stock *Stock) error {
