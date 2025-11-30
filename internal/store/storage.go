@@ -37,7 +37,7 @@ type Storage struct {
 		//stock management
 		AddStockToPortfolio(context.Context, int64, int64, *Stock) error
 		UpdateStockToPortfolio(context.Context, int64, int64, *Stock) (*Stock, error)
-		DeleteStockFromPortfolio(context.Context, int64, int64, *Stock) error
+		DeleteStockFromPortfolio(context.Context, int64, int64, string) error
 	}
 	Stocks interface {
 	}

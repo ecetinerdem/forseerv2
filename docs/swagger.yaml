@@ -51,6 +51,20 @@ definitions:
     required:
     - name
     type: object
+  main.UpdateStockPayload:
+    properties:
+      average_price:
+        type: number
+      shares:
+        type: number
+      symbol:
+        maxLength: 4
+        minLength: 1
+        type: string
+    required:
+    - shares
+    - symbol
+    type: object
   main.UserWithToken:
     properties:
       created_at:
@@ -385,6 +399,89 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Add a stock to a portfolio
+      tags:
+      - portfolios
+  /portfolios/{portfolioID}/stocks/{symbol}:
+    delete:
+      consumes:
+      - application/json
+      description: Removes a stock from the specified portfolio
+      parameters:
+      - description: Portfolio ID
+        in: path
+        name: portfolioID
+        required: true
+        type: integer
+      - description: Stock Symbol
+        in: path
+        name: symbol
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Stock deleted successfully
+        "400":
+          description: Bad Request
+          schema: {}
+        "401":
+          description: Unauthorized
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Delete a stock from a portfolio
+      tags:
+      - portfolios
+    put:
+      consumes:
+      - application/json
+      description: Updates shares and average price of an existing stock
+      parameters:
+      - description: Portfolio ID
+        in: path
+        name: portfolioID
+        required: true
+        type: integer
+      - description: Stock Symbol
+        in: path
+        name: symbol
+        required: true
+        type: string
+      - description: Update payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/main.UpdateStockPayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/store.Stock'
+        "400":
+          description: Bad Request
+          schema: {}
+        "401":
+          description: Unauthorized
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Update a stock in a portfolio
       tags:
       - portfolios
   /portfolios/search:

@@ -523,7 +523,7 @@ func (ps *PortfolioStore) UpdateStockToPortfolio(ctx context.Context, portfolioI
 	return &updatedStock, nil
 }
 
-func (ps *PortfolioStore) DeleteStockFromPortfolio(ctx context.Context, portfolioID int64, userID int64, stock *Stock) error {
+func (ps *PortfolioStore) DeleteStockFromPortfolio(ctx context.Context, portfolioID int64, userID int64, symbol string) error {
 
 	return withTX(ps.db, ctx, func(tx *sql.Tx) error {
 		ctx, cancel := context.WithTimeout(ctx, QueryTimeOut)
@@ -540,7 +540,7 @@ func (ps *PortfolioStore) DeleteStockFromPortfolio(ctx context.Context, portfoli
 			DELETE FROM portfolio_stocks
 			WHERE portfolio_id = $1 AND symbol = $2	
 		`
-		result, err := tx.ExecContext(ctx, stockQuery, portfolioID, stock.Symbol)
+		result, err := tx.ExecContext(ctx, stockQuery, portfolioID, symbol)
 		if err != nil {
 			return err
 		}

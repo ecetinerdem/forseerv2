@@ -5,9 +5,16 @@ import (
 	"net/http"
 
 	"github.com/ecetinerdem/forseerv2/internal/store"
+	"github.com/go-chi/chi/v5"
 )
 
 type AddStockPayload struct {
+	Symbol       string  `json:"symbol" validate:"required,min=1,max=4"`
+	Shares       float64 `json:"shares" validate:"required,gt=0"`
+	AveragePrice float64 `json:"average_price" validate:"requiredgt=0"`
+}
+
+type UpdateStockPayload struct {
 	Symbol       string  `json:"symbol" validate:"required,min=1,max=4"`
 	Shares       float64 `json:"shares" validate:"required,gt=0"`
 	AveragePrice float64 `json:"average_price" validate:"requiredgt=0"`
@@ -102,7 +109,7 @@ func (app *application) updateStockHandler(w http.ResponseWriter, r *http.Reques
 
 	ctx := r.Context()
 
-	var addStockPayload AddStockPayload
+	var addStockPayload UpdateStockPayload
 	err := readJson(w, r, &addStockPayload)
 
 	if err != nil {
@@ -139,5 +146,41 @@ func (app *application) updateStockHandler(w http.ResponseWriter, r *http.Reques
 	}
 }
 
+// DeleteStockFromPortfolio godoc
+//
+//	@Summary		Delete a stock from a portfolio
+//	@Description	Removes a stock from the specified portfolio
+//	@Tags			portfolios
+//	@Accept			json
+//	@Produce		json
+//	@Param			portfolioID	path	int		true	"Portfolio ID"
+//	@Param			symbol		path	string	true	"Stock Symbol"
+//	@Success		204			"Stock deleted successfully"
+//	@Failure		400			{object}	error
+//	@Failure		401			{object}	error
+//	@Failure		404			{object}	error
+//	@Failure		500			{object}	error
+//	@Security		ApiKeyAuth
+//	@Router			/portfolios/{portfolioID}/stocks/{symbol} [delete]
+func (app *application) deleteStockHandler(w http.ResponseWriter, r *http.Request) {
+	portfolio := getPortfolioFromCtx(r)
+	symbol := chi.URLParam(r, "symbol")
 
-func (app *application) deleteStockHandler
+	//Get from the auth later
+	UserID := 1
+
+	ctx := r.Context()
+
+	err := app.store.Portfolio.DeleteStockFromPortfolio(ctx, portfolio.ID, int64(UserID), symbol)
+
+	if err != nil {
+		switch {
+		case errors.Is(err, store.ErrNotFound):
+			app.notFoundError(w, r, err)
+		default:
+			app.internalServerError(w, r, err)
+		}
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}

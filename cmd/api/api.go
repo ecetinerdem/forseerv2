@@ -88,6 +88,13 @@ func (app *application) mount() *chi.Mux {
 				r.Get("/", app.getPortfolioHandler)
 				r.Patch("/", app.updatePortfolioHandler)
 				r.Delete("/", app.deletePortfolioHandler)
+
+				r.Route("/stocks", func(r chi.Router) {
+					r.Post("/", app.addStockHandler)
+					r.Put("/{symbol}", app.updateStockHandler)
+					r.Delete("/{symbol}", app.deleteStockHandler)
+				})
+
 			})
 		})
 

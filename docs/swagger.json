@@ -443,6 +443,130 @@
                 }
             }
         },
+        "/portfolios/{portfolioID}/stocks/{symbol}": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Updates shares and average price of an existing stock",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "portfolios"
+                ],
+                "summary": "Update a stock in a portfolio",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Portfolio ID",
+                        "name": "portfolioID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Stock Symbol",
+                        "name": "symbol",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Update payload",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/main.UpdateStockPayload"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/store.Stock"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {}
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {}
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {}
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {}
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Removes a stock from the specified portfolio",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "portfolios"
+                ],
+                "summary": "Delete a stock from a portfolio",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Portfolio ID",
+                        "name": "portfolioID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Stock Symbol",
+                        "name": "symbol",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Stock deleted successfully"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {}
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {}
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {}
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {}
+                    }
+                }
+            }
+        },
         "/users/activate/{token}": {
             "put": {
                 "security": [
@@ -606,6 +730,26 @@
                 "name": {
                     "type": "string",
                     "maxLength": 50
+                }
+            }
+        },
+        "main.UpdateStockPayload": {
+            "type": "object",
+            "required": [
+                "shares",
+                "symbol"
+            ],
+            "properties": {
+                "average_price": {
+                    "type": "number"
+                },
+                "shares": {
+                    "type": "number"
+                },
+                "symbol": {
+                    "type": "string",
+                    "maxLength": 4,
+                    "minLength": 1
                 }
             }
         },
