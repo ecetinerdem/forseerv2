@@ -86,7 +86,7 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 
 	activationURL := fmt.Sprintf("%s/confirm/%s", app.config.frontEndURL, plainToken)
 
-	isProdEnV := app.config.env == "production"
+	isProdEnv := app.config.env == "production"
 	vars := struct {
 		Username      string
 		ActivationURL string
@@ -95,17 +95,18 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 		ActivationURL: activationURL,
 	}
 
-	//status code here
-	_, err = app.mailer.Send(mailer.UserWlcomeTemplate, user.Username, user.Email, vars, !isProdEnV)
+	status, err := app.mailer.Send(mailer.UserWelcomeTemplate, user.Username, user.Email, vars, !isProdEnv)
 	if err != nil {
-		if err := app.store.Users.DeleteUser(ctx, user.ID); err != nil {
-			//change later to logger and use statuscode to logger
-			//app.logger.Errorw("error sending welcome email", "error", err)
-			fmt.Printf("error deleting user")
+		app.logger.Errorw("error sending welcome email", "error", err)
+		if err := app.store.Users.DeleteUser(r.Context(), user.ID); err != nil {
+			app.logger.Errorw("error sending welcome email", "error", err)
+
 		}
 		app.internalServerError(w, r, err)
 		return
 	}
+
+	app.logger.Infow("Email sent", "status code", status)
 
 	if err := app.writeJsonResponse(w, http.StatusCreated, userWithToken); err != nil {
 		app.internalServerError(w, r, err)

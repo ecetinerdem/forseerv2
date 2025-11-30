@@ -1,13 +1,13 @@
 package main
 
 import (
-	"log"
 	"time"
 
 	"github.com/ecetinerdem/forseerv2/internal/db"
 	"github.com/ecetinerdem/forseerv2/internal/env"
 	"github.com/ecetinerdem/forseerv2/internal/mailer"
 	"github.com/ecetinerdem/forseerv2/internal/store"
+	"go.uber.org/zap"
 )
 
 //	@title			ForSeer API
@@ -49,25 +49,34 @@ func main() {
 		},
 	}
 
+	//Logger
+	logger := zap.Must(zap.NewProduction()).Sugar()
+	defer logger.Sync()
+
+	// DB
 	db, err := db.New(cfg.db.addr, cfg.db.maxOpenConn, cfg.db.maxIdleConn, cfg.db.maxIdleTime)
 
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatal(err)
 	}
 
 	defer db.Close()
-	log.Println("database connection established")
+	logger.Info("database connection established")
 
+	//Store
 	store := store.NewStorage(db)
+
+	//Mailer
 	mailer := mailer.NewSendgrid(cfg.mail.sendGrid.apiKey, cfg.mail.fromEmail)
 
 	app := &application{
 		config: cfg,
 		store:  store,
+		logger: logger,
 		mailer: mailer,
 	}
 
 	mux := app.mount()
 
-	log.Fatal(app.run(mux))
+	logger.Fatal(app.run(mux))
 }
