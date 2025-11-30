@@ -66,9 +66,7 @@ func (app *application) mount() *chi.Mux {
 		r.Get("/healthz", app.healthzCheckHandler)
 
 		docsURL := fmt.Sprintf("%s/swagger/doc.json", app.config.addr)
-		r.Get("/swagger/*", httpSwagger.Handler(
-			httpSwagger.URL(docsURL), //The url pointing to API definition
-		))
+		r.Get("/swagger/*", httpSwagger.Handler(httpSwagger.URL(docsURL)))
 
 		r.Route("/users", func(r chi.Router) {
 			r.Put("/activate/{token}", app.activateUserHandler)
@@ -102,7 +100,7 @@ func (app *application) run(mux *chi.Mux) error {
 
 	//Docs
 	docs.SwaggerInfo.Version = app.config.version
-	docs.SwaggerInfo.Host = app.config.apiURL
+	docs.SwaggerInfo.Host = "localhost:3000"
 	docs.SwaggerInfo.BasePath = "/v1"
 	srvr := &http.Server{
 		Addr:         app.config.addr,

@@ -12,7 +12,7 @@ import (
 	"github.com/google/uuid"
 )
 
-type RegisterUserpayload struct {
+type RegisterUserPayload struct {
 	Username string `json:"username" validate:"required,max=100"`
 	Email    string `json:"email" validate:"required,max=255"`
 	Password string `json:"password" validate:"required,min=8,max=16"`
@@ -23,8 +23,20 @@ type UserWithToken struct {
 	Token string `json:"token"`
 }
 
+// registerUserHandler godoc
+//
+//	@Summary		Register a user
+//	@Description	Register a user
+//	@Tags			authentication
+//	@Accept			json
+//	@Produce		json
+//	@Param			payload	body		RegisterUserPayload	true	"User credentials"
+//	@Success		201		{object}	UserWithToken		"User registered"
+//	@Failure		400		{object}	error
+//	@Failure		500		{object}	error
+//	@Router			/authentication/user [post]
 func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Request) {
-	var payload RegisterUserpayload
+	var payload RegisterUserPayload
 
 	err := readJson(w, r, &payload)
 	if err != nil {

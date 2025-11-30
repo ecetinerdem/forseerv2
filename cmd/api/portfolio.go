@@ -23,6 +23,20 @@ type UpdatePortfolioPayload struct {
 	Name string `json:"name" validate:"required,max=50"`
 }
 
+// CreatePost godoc
+//
+//	@Summary		Creates a portfolio
+//	@Description	Creates a portfolio
+//	@Tags			portfolios
+//	@Accept			json
+//	@Produce		json
+//	@Param			payload	body		CreatePortfolioPayload	true	"Portfolio payload"
+//	@Success		201		{object}	store.Portfolio
+//	@Failure		400		{object}	error
+//	@Failure		401		{object}	error
+//	@Failure		500		{object}	error
+//	@Security		ApiKeyAuth
+//	@Router			/portfolios [post]
 func (app *application) createPortfolioHandler(w http.ResponseWriter, r *http.Request) {
 
 	userID := int64(1) // TODO: get from auth
@@ -64,6 +78,18 @@ func (app *application) createPortfolioHandler(w http.ResponseWriter, r *http.Re
 	}
 }
 
+// GetPortfolios godoc
+//
+//	@Summary		Fetches all portfolios
+//	@Description	Fetches all portfolios belonging to the authenticated user
+//	@Tags			portfolios
+//	@Accept			json
+//	@Produce		json
+//	@Success		200	{array}		store.Portfolio
+//	@Failure		401	{object}	error
+//	@Failure		500	{object}	error
+//	@Security		ApiKeyAuth
+//	@Router			/portfolios [get]
 func (app *application) getPortfoliosHandler(w http.ResponseWriter, r *http.Request) {
 
 	userID := int64(1) // TODO: get from auth
@@ -84,6 +110,19 @@ func (app *application) getPortfoliosHandler(w http.ResponseWriter, r *http.Requ
 	}
 }
 
+// GetPost godoc
+//
+//	@Summary		Fetches a portfolio
+//	@Description	Fetches a portfolio by ID
+//	@Tags			portfolios
+//	@Accept			json
+//	@Produce		json
+//	@Param			id	path		int	true	"Portfolio ID"
+//	@Success		204	{object}	store.Portfolio
+//	@Failure		404	{object}	error
+//	@Failure		500	{object}	error
+//	@Security		ApiKeyAuth
+//	@Router			/portfolios/{id} [get]
 func (app *application) getPortfolioHandler(w http.ResponseWriter, r *http.Request) {
 
 	URLPortfolioID := chi.URLParam(r, "portfolioID")
@@ -115,6 +154,20 @@ func (app *application) getPortfolioHandler(w http.ResponseWriter, r *http.Reque
 
 }
 
+// SearchPortfolios godoc
+//
+//	@Summary		Search portfolios by name
+//	@Description	Searches the user's portfolios whose names partially match the provided query
+//	@Tags			portfolios
+//	@Accept			json
+//	@Produce		json
+//	@Param			name	query		string	true	"Search term for portfolio name"
+//	@Success		200		{array}		store.Portfolio
+//	@Failure		400		{object}	error
+//	@Failure		401		{object}	error
+//	@Failure		500		{object}	error
+//	@Security		ApiKeyAuth
+//	@Router			/portfolios/search [get]
 func (app *application) searchPortfoliosHandler(w http.ResponseWriter, r *http.Request) {
 	userID := int64(1) // TODO: get from auth
 
@@ -155,6 +208,23 @@ func (app *application) searchPortfoliosHandler(w http.ResponseWriter, r *http.R
 	}
 }
 
+// UpdatePortfolio godoc
+//
+//	@Summary		Updates an existing portfolio
+//	@Description	Updates portfolio fields (currently only the name). Requires version check.
+//	@Tags			portfolios
+//	@Accept			json
+//	@Produce		json
+//	@Param			portfolioID	path		int						true	"Portfolio ID"
+//	@Param			payload		body		UpdatePortfolioPayload	true	"Update payload"
+//	@Success		200			{object}	store.Portfolio
+//	@Failure		400			{object}	error
+//	@Failure		401			{object}	error
+//	@Failure		404			{object}	error
+//	@Failure		409			{object}	error
+//	@Failure		500			{object}	error
+//	@Security		ApiKeyAuth
+//	@Router			/portfolios/{portfolioID} [patch]
 func (app *application) updatePortfolioHandler(w http.ResponseWriter, r *http.Request) {
 	portfolio := getPortfolioFromCtx(r)
 
@@ -200,6 +270,21 @@ func (app *application) updatePortfolioHandler(w http.ResponseWriter, r *http.Re
 	}
 }
 
+// DeletePortfolio godoc
+//
+//	@Summary		Deletes a portfolio
+//	@Description	Removes a portfolio permanently by its ID
+//	@Tags			portfolios
+//	@Accept			json
+//	@Produce		json
+//	@Param			portfolioID	path	int	true	"Portfolio ID"
+//	@Success		204			"Portfolio deleted successfully"
+//	@Failure		400			{object}	error
+//	@Failure		401			{object}	error
+//	@Failure		404			{object}	error
+//	@Failure		500			{object}	error
+//	@Security		ApiKeyAuth
+//	@Router			/portfolios/{portfolioID} [delete]
 func (app *application) deletePortfolioHandler(w http.ResponseWriter, r *http.Request) {
 
 	URLPortfolioID := chi.URLParam(r, "portfolioID")

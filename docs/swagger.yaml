@@ -1,4 +1,99 @@
 basePath: /v1
+definitions:
+  main.CreatePortfolioPayload:
+    properties:
+      name:
+        maxLength: 50
+        type: string
+      stocks:
+        items:
+          $ref: '#/definitions/store.Stock'
+        type: array
+    required:
+    - name
+    type: object
+  main.RegisterUserPayload:
+    properties:
+      email:
+        maxLength: 255
+        type: string
+      password:
+        maxLength: 16
+        minLength: 8
+        type: string
+      username:
+        maxLength: 100
+        type: string
+    required:
+    - email
+    - password
+    - username
+    type: object
+  main.UpdatePortfolioPayload:
+    properties:
+      name:
+        maxLength: 50
+        type: string
+    required:
+    - name
+    type: object
+  main.UserWithToken:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      first_name:
+        type: string
+      id:
+        type: integer
+      is_active:
+        type: boolean
+      last_name:
+        type: string
+      token:
+        type: string
+      updated_at:
+        type: string
+      username:
+        type: string
+    type: object
+  store.Portfolio:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      stocks:
+        items:
+          $ref: '#/definitions/store.Stock'
+        type: array
+      updated_at:
+        type: string
+      user_id:
+        type: integer
+      version:
+        type: integer
+    type: object
+  store.Stock:
+    properties:
+      average_price:
+        type: number
+      created_at:
+        type: string
+      id:
+        type: integer
+      portfolio_id:
+        type: integer
+      shares:
+        type: number
+      symbol:
+        type: string
+      updated_at:
+        type: string
+    type: object
 info:
   contact:
     email: forseerbussiness@gmail.com
@@ -10,7 +105,246 @@ info:
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   termsOfService: http://swagger.io/terms/
   title: ForSeer API
-paths: {}
+paths:
+  /authentication/user:
+    post:
+      consumes:
+      - application/json
+      description: Register a user
+      parameters:
+      - description: User credentials
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/main.RegisterUserPayload'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: User registered
+          schema:
+            $ref: '#/definitions/main.UserWithToken'
+        "400":
+          description: Bad Request
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      summary: Register a user
+      tags:
+      - authentication
+  /healthz:
+    get:
+      description: Healthcheck endpoint
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ok
+          schema:
+            type: string
+      summary: Healthcheck
+      tags:
+      - ops
+  /portfolios:
+    get:
+      consumes:
+      - application/json
+      description: Fetches all portfolios belonging to the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/store.Portfolio'
+            type: array
+        "401":
+          description: Unauthorized
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Fetches all portfolios
+      tags:
+      - portfolios
+    post:
+      consumes:
+      - application/json
+      description: Creates a portfolio
+      parameters:
+      - description: Portfolio payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/main.CreatePortfolioPayload'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/store.Portfolio'
+        "400":
+          description: Bad Request
+          schema: {}
+        "401":
+          description: Unauthorized
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Creates a portfolio
+      tags:
+      - portfolios
+  /portfolios/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Fetches a portfolio by ID
+      parameters:
+      - description: Portfolio ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            $ref: '#/definitions/store.Portfolio'
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Fetches a portfolio
+      tags:
+      - portfolios
+  /portfolios/{portfolioID}:
+    delete:
+      consumes:
+      - application/json
+      description: Removes a portfolio permanently by its ID
+      parameters:
+      - description: Portfolio ID
+        in: path
+        name: portfolioID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Portfolio deleted successfully
+        "400":
+          description: Bad Request
+          schema: {}
+        "401":
+          description: Unauthorized
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Deletes a portfolio
+      tags:
+      - portfolios
+    patch:
+      consumes:
+      - application/json
+      description: Updates portfolio fields (currently only the name). Requires version
+        check.
+      parameters:
+      - description: Portfolio ID
+        in: path
+        name: portfolioID
+        required: true
+        type: integer
+      - description: Update payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/main.UpdatePortfolioPayload'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/store.Portfolio'
+        "400":
+          description: Bad Request
+          schema: {}
+        "401":
+          description: Unauthorized
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "409":
+          description: Conflict
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Updates an existing portfolio
+      tags:
+      - portfolios
+  /portfolios/search:
+    get:
+      consumes:
+      - application/json
+      description: Searches the user's portfolios whose names partially match the
+        provided query
+      parameters:
+      - description: Search term for portfolio name
+        in: query
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/store.Portfolio'
+            type: array
+        "400":
+          description: Bad Request
+          schema: {}
+        "401":
+          description: Unauthorized
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Search portfolios by name
+      tags:
+      - portfolios
 securityDefinitions:
   ApiKeyAuth:
     in: header
