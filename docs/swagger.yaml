@@ -1,5 +1,19 @@
 basePath: /v1
 definitions:
+  main.AddStockPayload:
+    properties:
+      average_price:
+        type: number
+      shares:
+        type: number
+      symbol:
+        maxLength: 4
+        minLength: 1
+        type: string
+    required:
+    - shares
+    - symbol
+    type: object
   main.CreatePortfolioPayload:
     properties:
       name:
@@ -327,6 +341,50 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Updates an existing portfolio
+      tags:
+      - portfolios
+  /portfolios/{portfolioID}/stocks:
+    post:
+      consumes:
+      - application/json
+      description: Adds a new stock to the specified portfolio
+      parameters:
+      - description: Portfolio ID
+        in: path
+        name: portfolioID
+        required: true
+        type: integer
+      - description: Stock payload
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/main.AddStockPayload'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/store.Stock'
+        "400":
+          description: Bad Request
+          schema: {}
+        "401":
+          description: Unauthorized
+          schema: {}
+        "404":
+          description: Not Found
+          schema: {}
+        "409":
+          description: Conflict
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Add a stock to a portfolio
       tags:
       - portfolios
   /portfolios/search:

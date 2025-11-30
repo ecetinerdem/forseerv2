@@ -385,6 +385,72 @@ const docTemplate = `{
                 }
             }
         },
+        "/portfolios/{portfolioID}/stocks": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Adds a new stock to the specified portfolio",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "portfolios"
+                ],
+                "summary": "Add a stock to a portfolio",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Portfolio ID",
+                        "name": "portfolioID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Stock payload",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/main.AddStockPayload"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/store.Stock"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {}
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {}
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {}
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {}
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {}
+                    }
+                }
+            }
+        },
         "/users/activate/{token}": {
             "put": {
                 "security": [
@@ -478,6 +544,26 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "main.AddStockPayload": {
+            "type": "object",
+            "required": [
+                "shares",
+                "symbol"
+            ],
+            "properties": {
+                "average_price": {
+                    "type": "number"
+                },
+                "shares": {
+                    "type": "number"
+                },
+                "symbol": {
+                    "type": "string",
+                    "maxLength": 4,
+                    "minLength": 1
+                }
+            }
+        },
         "main.CreatePortfolioPayload": {
             "type": "object",
             "required": [
