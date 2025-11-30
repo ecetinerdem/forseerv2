@@ -30,7 +30,7 @@ type AddStockPayload struct {
 //	@Failure		500			{object}	error
 //	@Security		ApiKeyAuth
 //	@Router			/portfolios/{portfolioID}/stocks [post]
-func (app *application) addStockToPortfolioHandler(w http.ResponseWriter, r *http.Request) {
+func (app *application) addStockHandler(w http.ResponseWriter, r *http.Request) {
 	portfolio := getPortfolioFromCtx(r)
 
 	//Get from the auth later
@@ -75,3 +75,69 @@ func (app *application) addStockToPortfolioHandler(w http.ResponseWriter, r *htt
 		return
 	}
 }
+
+// UpdateStockInPortfolio godoc
+//
+//	@Summary		Update a stock in a portfolio
+//	@Description	Updates shares and average price of an existing stock
+//	@Tags			portfolios
+//	@Accept			json
+//	@Produce		json
+//	@Param			portfolioID	path		int					true	"Portfolio ID"
+//	@Param			symbol		path		string				true	"Stock Symbol"
+//	@Param			payload		body		UpdateStockPayload	true	"Update payload"
+//	@Success		200			{object}	store.Stock
+//	@Failure		400			{object}	error
+//	@Failure		401			{object}	error
+//	@Failure		404			{object}	error
+//	@Failure		500			{object}	error
+//	@Security		ApiKeyAuth
+//	@Router			/portfolios/{portfolioID}/stocks/{symbol} [put]
+func (app *application) updateStockHandler(w http.ResponseWriter, r *http.Request) {
+
+	portfolio := getPortfolioFromCtx(r)
+
+	//Get from the auth later
+	UserID := 1
+
+	ctx := r.Context()
+
+	var addStockPayload AddStockPayload
+	err := readJson(w, r, &addStockPayload)
+
+	if err != nil {
+		app.badRequestError(w, r, err)
+		return
+	}
+	err = Validate.Struct(&addStockPayload)
+	if err != nil {
+		app.badRequestError(w, r, err)
+		return
+	}
+
+	stock := &store.Stock{
+		Symbol:       addStockPayload.Symbol,
+		Shares:       addStockPayload.Shares,
+		AveragePrice: addStockPayload.AveragePrice,
+	}
+	updatedStock, err := app.store.Portfolio.UpdateStockToPortfolio(ctx, portfolio.ID, int64(UserID), stock)
+
+	if err != nil {
+		switch {
+		case errors.Is(err, store.ErrNotFound):
+			app.notFoundError(w, r, err)
+		default:
+			app.internalServerError(w, r, err)
+		}
+		return
+	}
+
+	err = app.writeJsonResponse(w, http.StatusOK, &updatedStock)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+}
+
+
+func (app *application) deleteStockHandler
