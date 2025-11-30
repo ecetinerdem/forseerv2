@@ -38,3 +38,18 @@ func (app *application) duplicateError(w http.ResponseWriter, r *http.Request, e
 
 	writeJsonError(w, http.StatusConflict, "the server encountered a duplicate")
 }
+
+func (app *application) unAuthorizedError(w http.ResponseWriter, r *http.Request, err error) {
+
+	app.logger.Errorw("unauthorized error: %s path: %s error: %s", r.Method, r.URL.Path, err.Error())
+
+	writeJsonError(w, http.StatusUnauthorized, "unauthorized error")
+}
+
+func (app *application) unAuthorizedBasicError(w http.ResponseWriter, r *http.Request, err error) {
+
+	app.logger.Errorw("unauthorized basic error: %s path: %s error: %s", r.Method, r.URL.Path, err.Error())
+
+	w.Header().Set("WWW-Authenticate", `Basic realm="restricted", charset="UTF-8"`)
+	writeJsonError(w, http.StatusUnauthorized, "unauthorized basic error")
+}

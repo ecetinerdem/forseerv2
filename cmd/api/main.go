@@ -47,6 +47,12 @@ func main() {
 			fromEmail: env.GetString("MAILER_FROM_EMAIL", ""),
 			expiry:    time.Hour * 24 * 3,
 		},
+		auth: authConfig{
+			basic: basicConfig{
+				user: env.GetString("AUTH_BASIC_USER", ""),
+				pass: env.GetString("AUTH_BASIC_PASS", ""),
+			},
+		},
 	}
 
 	//Logger
