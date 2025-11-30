@@ -1,14 +1,17 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"time"
 
+	"github.com/ecetinerdem/forseerv2/docs" //Required for generating swagger docs
 	"github.com/ecetinerdem/forseerv2/internal/mailer"
 	"github.com/ecetinerdem/forseerv2/internal/store"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	httpSwagger "github.com/swaggo/http-swagger/v2" // http-swagger middleware
 )
 
 type application struct {
@@ -23,6 +26,7 @@ type config struct {
 	env         string
 	version     string
 	mail        mailConfig
+	apiURL      string
 	frontEndURL string
 }
 
@@ -61,8 +65,13 @@ func (app *application) mount() *chi.Mux {
 	r.Route("/v1", func(r chi.Router) {
 		r.Get("/healthz", app.healthzCheckHandler)
 
+		docsURL := fmt.Sprintf("%s/swagger/doc.json", app.config.addr)
+		r.Get("/swagger/*", httpSwagger.Handler(
+			httpSwagger.URL(docsURL), //The url pointing to API definition
+		))
+
 		r.Route("/users", func(r chi.Router) {
-			r.Route("/activate/{token}", app.activateUserHandler)
+			r.Put("/activate/{token}", app.activateUserHandler)
 			r.Route("/{userID}", func(r chi.Router) {
 				r.Get("/", app.getUserHandler)
 			})
@@ -91,6 +100,10 @@ func (app *application) mount() *chi.Mux {
 
 func (app *application) run(mux *chi.Mux) error {
 
+	//Docs
+	docs.SwaggerInfo.Version = app.config.version
+	docs.SwaggerInfo.Host = app.config.apiURL
+	docs.SwaggerInfo.BasePath = "/v1"
 	srvr := &http.Server{
 		Addr:         app.config.addr,
 		Handler:      mux,

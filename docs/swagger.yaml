@@ -1,0 +1,19 @@
+basePath: /v1
+info:
+  contact:
+    email: forseerbussiness@gmail.com
+    name: API Support
+    url: http://www.forseer.com
+  description: A platform for analyze your portfolio with power of AI.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: ForSeer API
+paths: {}
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

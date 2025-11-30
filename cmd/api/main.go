@@ -10,10 +10,27 @@ import (
 	"github.com/ecetinerdem/forseerv2/internal/store"
 )
 
+//	@title			ForSeer API
+//	@description	A platform for analyze your portfolio with power of AI.
+//	@termsOfService	http://swagger.io/terms/
+
+//	@contact.name	API Support
+//	@contact.url	http://www.forseer.com
+//	@contact.email	forseerbussiness@gmail.com
+
+//	@license.name	Apache 2.0
+//	@license.url	http://www.apache.org/licenses/LICENSE-2.0.html
+
+// @BasePath					/v1
+// @securityDefinitions.apiKey	ApiKeyAuth
+// @in							header
+// @name						Authorization
+// @description
 func main() {
 
 	cfg := config{
-		addr: env.GetString("ADDR", ":8080"),
+		addr:        env.GetString("ADDR", ":8080"),
+		apiURL:      env.GetString("EXTERNAL_URL", "http://localhost:8080"),
 		frontEndURL: env.GetString("FRONTEND_URL", "http://localhost:4000"),
 		db: dbConfig{
 			addr:        env.GetString("DB_ADDR", "postgres://postgres:postgres@localhost:5432/forseer?sslmode=disable"),
@@ -47,7 +64,7 @@ func main() {
 	app := &application{
 		config: cfg,
 		store:  store,
-		mailer: mailer
+		mailer: mailer,
 	}
 
 	mux := app.mount()
