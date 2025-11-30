@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"time"
 
 	"github.com/ecetinerdem/forseerv2/internal/db"
 	"github.com/ecetinerdem/forseerv2/internal/env"
@@ -20,6 +21,9 @@ func main() {
 		},
 		env:     env.GetString("ENV", "development"),
 		version: env.GetString("VERSION", "1.0.0"),
+		mail: mailConfig{
+			expiry: time.Hour * 24 * 3,
+		},
 	}
 
 	db, err := db.New(cfg.db.addr, cfg.db.maxOpenConn, cfg.db.maxIdleConn, cfg.db.maxIdleTime)

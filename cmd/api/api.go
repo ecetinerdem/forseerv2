@@ -20,6 +20,7 @@ type config struct {
 	db      dbConfig
 	env     string
 	version string
+	mail    mailConfig
 }
 
 type dbConfig struct {
@@ -27,6 +28,10 @@ type dbConfig struct {
 	maxOpenConn int
 	maxIdleConn int
 	maxIdleTime string
+}
+
+type mailConfig struct {
+	expiry time.Duration
 }
 
 func (app *application) mount() *chi.Mux {

@@ -8,15 +8,18 @@ import (
 )
 
 var (
-	ErrNotFound        = errors.New("resource not found")
-	ErrVersionConflict = errors.New("resource version conflict")
-	QueryTimeOut       = time.Second * 5
+	ErrNotFound          = errors.New("resource not found")
+	ErrVersionConflict   = errors.New("resource version conflict")
+	ErrDuplicateEmail    = errors.New("duplicate email")
+	ErrDuplicateUsername = errors.New("duplicate username")
+
+	QueryTimeOut = time.Second * 5
 )
 
 type Storage struct {
 	Users interface {
-		Create(context.Context, *User) error
-		CreateAndInvite(context.Context, *User, string) error
+		Create(context.Context, *sql.Tx, *User) error
+		CreateAndInvite(context.Context, *User, string, time.Duration) error
 		GetUserByID(context.Context, int64) (*User, error)
 	}
 	Portfolio interface {

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/ecetinerdem/forseerv2/internal/store"
@@ -40,9 +41,16 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 	}
 
 	ctx := r.Context()
-	err = app.store.Users.CreateAndInvite(ctx, user, "")
+	err = app.store.Users.CreateAndInvite(ctx, user, "", app.config.mail.expiry)
 	if err != nil {
-		app.internalServerError(w, r, err)
+		switch {
+		case errors.Is(err, store.ErrDuplicateEmail):
+			app.badRequestError(w, r, err)
+		case errors.Is(err, store.ErrDuplicateUsername):
+			app.badRequestError(w, r, err)
+		default:
+			app.internalServerError(w, r, err)
+		}
 		return
 	}
 
