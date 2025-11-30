@@ -1,7 +1,8 @@
 package mailer
 
 const (
-	fromName = "ForSeer"
+	fromName   = "ForSeer"
+	maxRetires = 3
 )
 
 type Client interface {
