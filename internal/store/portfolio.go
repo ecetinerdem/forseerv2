@@ -504,6 +504,15 @@ func (ps *PortfolioStore) UpdateStockToPortfolio(ctx context.Context, portfolioI
 			return err
 		}
 
+		portfolioQuery := `
+			UPDATE portfolios 
+			SET updated_at = NOW()
+			WHERE id = $1
+		`
+		_, err = tx.ExecContext(ctx, portfolioQuery, portfolioID)
+		if err != nil {
+			return err
+		}
 		return nil
 	})
 
@@ -525,6 +534,33 @@ func (ps *PortfolioStore) DeleteStockFromPortfolio(ctx context.Context, portfoli
 		}
 		if !exist {
 			return ErrNotFound
+		}
+
+		stockQuery := `
+			DELETE FROM portfolio_stocks
+			WHERE portfolio_id = $1 AND symbol = $2	
+		`
+		result, err := tx.ExecContext(ctx, stockQuery, portfolioID, stock.Symbol)
+		if err != nil {
+			return err
+		}
+
+		rowsAffected, err := result.RowsAffected()
+		if err != nil {
+			return err
+		}
+		if rowsAffected == 0 {
+			return ErrNotFound
+		}
+
+		portfolioQuery := `
+			UPDATE portfolios 
+			SET updated_at = NOW()
+			WHERE id = $1
+		`
+		_, err = tx.ExecContext(ctx, portfolioQuery, portfolioID)
+		if err != nil {
+			return err
 		}
 		return nil
 	})
