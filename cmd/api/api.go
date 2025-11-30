@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/ecetinerdem/forseerv2/internal/mailer"
 	"github.com/ecetinerdem/forseerv2/internal/store"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -13,6 +14,7 @@ import (
 type application struct {
 	config config
 	store  *store.Storage
+	mailer mailer.Client
 }
 
 type config struct {
