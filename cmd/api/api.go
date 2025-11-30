@@ -18,11 +18,12 @@ type application struct {
 }
 
 type config struct {
-	addr    string
-	db      dbConfig
-	env     string
-	version string
-	mail    mailConfig
+	addr        string
+	db          dbConfig
+	env         string
+	version     string
+	mail        mailConfig
+	frontEndURL string
 }
 
 type dbConfig struct {
@@ -33,7 +34,13 @@ type dbConfig struct {
 }
 
 type mailConfig struct {
-	expiry time.Duration
+	sendGrid  sendGridConfig
+	expiry    time.Duration
+	fromEmail string
+}
+
+type sendGridConfig struct {
+	apiKey string
 }
 
 func (app *application) mount() *chi.Mux {

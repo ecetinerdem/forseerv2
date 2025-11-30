@@ -4,8 +4,10 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"net/http"
 
+	"github.com/ecetinerdem/forseerv2/internal/mailer"
 	"github.com/ecetinerdem/forseerv2/internal/store"
 	"github.com/google/uuid"
 )
@@ -68,6 +70,29 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 	userWithToken := UserWithToken{
 		User:  user,
 		Token: plainToken,
+	}
+
+	activationURL := fmt.Sprintf("%s/confirm/%s", app.config.frontEndURL, plainToken)
+
+	isProdEnV := app.config.env == "production"
+	vars := struct {
+		Username      string
+		ActivationURL string
+	}{
+		Username:      user.Username,
+		ActivationURL: activationURL,
+	}
+
+	//status code here
+	_, err = app.mailer.Send(mailer.UserWlcomeTemplate, user.Username, user.Email, vars, !isProdEnV)
+	if err != nil {
+		if err := app.store.Users.DeleteUser(ctx, user.ID); err != nil {
+			//change later to logger and use statuscode to logger
+			//app.logger.Errorw("error sending welcome email", "error", err)
+			fmt.Printf("error deleting user")
+		}
+		app.internalServerError(w, r, err)
+		return
 	}
 
 	if err := app.writeJsonResponse(w, http.StatusCreated, userWithToken); err != nil {

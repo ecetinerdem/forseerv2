@@ -6,6 +6,7 @@ import (
 
 	"github.com/ecetinerdem/forseerv2/internal/db"
 	"github.com/ecetinerdem/forseerv2/internal/env"
+	"github.com/ecetinerdem/forseerv2/internal/mailer"
 	"github.com/ecetinerdem/forseerv2/internal/store"
 )
 
@@ -13,6 +14,7 @@ func main() {
 
 	cfg := config{
 		addr: env.GetString("ADDR", ":8080"),
+		frontEndURL: env.GetString("FRONTEND_URL", "http://localhost:4000"),
 		db: dbConfig{
 			addr:        env.GetString("DB_ADDR", "postgres://postgres:postgres@localhost:5432/forseer?sslmode=disable"),
 			maxOpenConn: env.GetInt("DB_MAX_OPEN_CONN", 30),
@@ -22,7 +24,11 @@ func main() {
 		env:     env.GetString("ENV", "development"),
 		version: env.GetString("VERSION", "1.0.0"),
 		mail: mailConfig{
-			expiry: time.Hour * 24 * 3,
+			sendGrid: sendGridConfig{
+				apiKey: env.GetString("MAILER_API_KEY", ""),
+			},
+			fromEmail: env.GetString("MAILER_FROM_EMAIL", ""),
+			expiry:    time.Hour * 24 * 3,
 		},
 	}
 
@@ -36,10 +42,12 @@ func main() {
 	log.Println("database connection established")
 
 	store := store.NewStorage(db)
+	mailer := mailer.NewSendgrid(cfg.mail.sendGrid.apiKey, cfg.mail.fromEmail)
 
 	app := &application{
 		config: cfg,
 		store:  store,
+		mailer: mailer
 	}
 
 	mux := app.mount()

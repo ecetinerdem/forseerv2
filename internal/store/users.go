@@ -241,3 +241,35 @@ func (us *UserStore) GetUserByID(ctx context.Context, userID int64) (*User, erro
 	}
 	return user, nil
 }
+
+func (us *UserStore) DeleteUser(ctx context.Context, userID int64) error {
+	return withTX(us.db, ctx, func(tx *sql.Tx) error {
+		err := us.deleteUser(ctx, tx, userID)
+		if err != nil {
+			return err
+		}
+
+		err = us.deleteUserInvitations(ctx, tx, userID)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+}
+
+func (us *UserStore) deleteUser(ctx context.Context, tx *sql.Tx, userID int64) error {
+	query := `
+		DELETE FROM users
+		WHERE id = $1
+	`
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeOut)
+	defer cancel()
+
+	_, err := tx.ExecContext(ctx, query, userID)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
