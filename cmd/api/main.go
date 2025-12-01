@@ -1,6 +1,8 @@
 package main
 
 import (
+	"expvar"
+	"runtime"
 	"time"
 
 	"github.com/ecetinerdem/forseerv2/internal/auth"
@@ -123,6 +125,15 @@ func main() {
 		authenticator: JWTAuthenticator,
 		rateLimiter:   rateLimiter,
 	}
+
+	// Metrics
+	expvar.NewString("version").Set(app.config.version)
+	expvar.Publish("database", expvar.Func(func() any {
+		return db.Stats()
+	}))
+	expvar.Publish("goroutines", expvar.Func(func() any {
+		return runtime.NumGoroutine()
+	}))
 
 	mux := app.mount()
 
