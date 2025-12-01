@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/ecetinerdem/forseerv2/docs" //Required for generating swagger docs
+	"github.com/ecetinerdem/forseerv2/internal/auth"
 	"github.com/ecetinerdem/forseerv2/internal/env"
 	"github.com/ecetinerdem/forseerv2/internal/mailer"
 	"github.com/ecetinerdem/forseerv2/internal/store"
@@ -17,10 +18,11 @@ import (
 )
 
 type application struct {
-	config config
-	store  *store.Storage
-	logger *zap.SugaredLogger
-	mailer mailer.Client
+	config        config
+	store         *store.Storage
+	logger        *zap.SugaredLogger
+	mailer        mailer.Client
+	authenticator auth.Authenticator
 }
 
 type config struct {
@@ -53,10 +55,17 @@ type sendGridConfig struct {
 
 type authConfig struct {
 	basic basicConfig
+	token tokenConfig
 }
 type basicConfig struct {
 	user string
 	pass string
+}
+
+type tokenConfig struct {
+	secret string
+	expiry time.Duration
+	iss    string
 }
 
 func (app *application) mount() *chi.Mux {
@@ -100,6 +109,7 @@ func (app *application) mount() *chi.Mux {
 		//Only Public Route
 		r.Route("/authentication", func(r chi.Router) {
 			r.Post("/user", app.registerUserHandler)
+			r.Post("/token", app.createTokenHandler)
 		})
 
 		r.Route("/portfolios", func(r chi.Router) {

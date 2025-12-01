@@ -23,6 +23,7 @@ type Storage struct {
 		CreateAndInvite(context.Context, *User, string, time.Duration) error
 		Activate(context.Context, string) error
 		GetUserByID(context.Context, int64) (*User, error)
+		GetByEmail(context.Context, string) (*User, error)
 		DeleteUser(context.Context, int64) error
 	}
 	Portfolio interface {

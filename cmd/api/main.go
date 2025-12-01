@@ -3,6 +3,7 @@ package main
 import (
 	"time"
 
+	"github.com/ecetinerdem/forseerv2/internal/auth"
 	"github.com/ecetinerdem/forseerv2/internal/db"
 	"github.com/ecetinerdem/forseerv2/internal/env"
 	"github.com/ecetinerdem/forseerv2/internal/mailer"
@@ -52,6 +53,11 @@ func main() {
 				user: env.GetString("AUTH_BASIC_USER", ""),
 				pass: env.GetString("AUTH_BASIC_PASS", ""),
 			},
+			token: tokenConfig{
+				secret: env.GetString("AUTH_TOKEN_SECRET", ""),
+				expiry: time.Hour * 24 * 3,
+				iss:    env.GetString("AUTH_TOKEN_ISS", "forseer"),
+			},
 		},
 	}
 
@@ -75,11 +81,15 @@ func main() {
 	//Mailer
 	mailer := mailer.NewSendgrid(cfg.mail.sendGrid.apiKey, cfg.mail.fromEmail)
 
+	//JWT Authenticator
+	JWTAuthenticator := auth.NewJWTAuthenticator(cfg.auth.token.secret, cfg.auth.token.iss, cfg.auth.token.iss)
+
 	app := &application{
-		config: cfg,
-		store:  store,
-		logger: logger,
-		mailer: mailer,
+		config:        cfg,
+		store:         store,
+		logger:        logger,
+		mailer:        mailer,
+		authenticator: JWTAuthenticator,
 	}
 
 	mux := app.mount()
