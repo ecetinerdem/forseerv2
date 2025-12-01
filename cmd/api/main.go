@@ -16,6 +16,8 @@ import (
 	"go.uber.org/zap"
 )
 
+const version = "1.0.0"
+
 //	@title			ForSeer API
 //	@description	A platform for analyze your portfolio with power of AI.
 //	@termsOfService	http://swagger.io/terms/
@@ -51,7 +53,7 @@ func main() {
 			enabled: env.GetBool("REDIS_ENABLED", false),
 		},
 		env:     env.GetString("ENV", "development"),
-		version: env.GetString("VERSION", "1.0.0"),
+		version: env.GetString("VERSION", version),
 		mail: mailConfig{
 			sendGrid: sendGridConfig{
 				apiKey: env.GetString("MAILER_API_KEY", ""),
