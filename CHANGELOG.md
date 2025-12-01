@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.6.0](https://github.com/ecetinerdem/forseerv2/compare/v1.5.0...v1.6.0) (2025-12-01)
+
+
+### Features
+
+* setportfolio fix ([612dc06](https://github.com/ecetinerdem/forseerv2/commit/612dc06f7e22a5357378ad768abca4f3a458dddd))
+* setportfolio fix ([4bfb7f7](https://github.com/ecetinerdem/forseerv2/commit/4bfb7f7d2cf8c714e2515d1bc8393c7ac5c95e27))
+
 ## [1.5.0](https://github.com/ecetinerdem/forseerv2/compare/v1.4.0...v1.5.0) (2025-12-01)
 
 
