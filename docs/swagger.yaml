@@ -31,11 +31,16 @@ definitions:
       email:
         maxLength: 255
         type: string
+      password:
+        maxLength: 16
+        minLength: 8
+        type: string
       username:
         maxLength: 100
         type: string
     required:
     - email
+    - password
     - username
     type: object
   main.RegisterUserPayload:

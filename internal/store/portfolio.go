@@ -204,18 +204,18 @@ func (ps *PortfolioStore) SearchPortfoliosByName(ctx context.Context, userId int
 	return portfolios, nil
 }
 
-func (ps *PortfolioStore) GetPortfolioByID(ctx context.Context, portfolioID int64) (*Portfolio, error) {
+func (ps *PortfolioStore) GetPortfolioByID(ctx context.Context, portfolioID int64, userID int64) (*Portfolio, error) {
 
 	query := `
 		SELECT id, user_id, name, version, created_at, updated_at
 		FROM portfolios
-		WHERE id = $1
+		WHERE id = $1 AND user_id = $2
 	`
 	var p Portfolio
 
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeOut)
 	defer cancel()
-	err := ps.db.QueryRowContext(ctx, query, portfolioID).Scan(
+	err := ps.db.QueryRowContext(ctx, query, portfolioID, userID).Scan(
 		&p.ID,
 		&p.UserID,
 		&p.Name,
@@ -276,7 +276,7 @@ func (ps *PortfolioStore) GetPortfolioByID(ctx context.Context, portfolioID int6
 
 }
 
-func (ps *PortfolioStore) UpdatePortfolio(ctx context.Context, portfolio *Portfolio) (*Portfolio, error) {
+func (ps *PortfolioStore) UpdatePortfolio(ctx context.Context, portfolio *Portfolio, userID int64) (*Portfolio, error) {
 
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeOut)
 	defer cancel()
@@ -299,11 +299,11 @@ func (ps *PortfolioStore) UpdatePortfolio(ctx context.Context, portfolio *Portfo
 	query := `
 		UPDATE portfolios 
 		SET name = $1, version = version + 1, updated_at = NOW()
-		WHERE id = $2 AND  version = $3
+		WHERE id = $2 AND user_id = $3 AND  version = $4
 		RETURNING id, user_id, name, version, created_at, updated_at
 	`
 
-	err = ps.db.QueryRowContext(ctx, query, portfolio.Name, portfolio.ID, portfolio.Version).Scan(
+	err = ps.db.QueryRowContext(ctx, query, portfolio.Name, portfolio.ID, userID, portfolio.Version).Scan(
 		&portfolio.ID,
 		&portfolio.UserID,
 		&portfolio.Name,
@@ -362,15 +362,15 @@ func (ps *PortfolioStore) UpdatePortfolio(ctx context.Context, portfolio *Portfo
 	return portfolio, nil
 }
 
-func (ps *PortfolioStore) DeletePortfolio(ctx context.Context, portfolioID int64) error {
+func (ps *PortfolioStore) DeletePortfolio(ctx context.Context, portfolioID int64, userID int64) error {
 	query := `
 		DELETE FROM portfolios
-		WHERE id = $1
+		WHERE id = $1 AND user_id = $2
 	`
 
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeOut)
 	defer cancel()
-	result, err := ps.db.ExecContext(ctx, query, portfolioID)
+	result, err := ps.db.ExecContext(ctx, query, portfolioID, userID)
 
 	if err != nil {
 		return err
@@ -482,7 +482,7 @@ func (ps *PortfolioStore) UpdateStockToPortfolio(ctx context.Context, portfolioI
 			UPDATE portfolio_stocks
 			SET shares = $1, average_price = $2, updated_at = NOW()
 			WHERE portfolio_id = $3 AND symbol = $4
-			RETURNING id, portfolio_id, symbol, shares, average_price created_at, updated_at
+			RETURNING id, portfolio_id, symbol, shares, average_price, created_at, updated_at
 		`
 
 		err = tx.QueryRowContext(
@@ -493,13 +493,13 @@ func (ps *PortfolioStore) UpdateStockToPortfolio(ctx context.Context, portfolioI
 			stock.PortfolioID,
 			stock.Symbol,
 		).Scan(
-			&stock.ID,
-			&stock.PortfolioID,
-			&stock.Symbol,
-			&stock.Shares,
-			&stock.AveragePrice,
-			&stock.CreatedAt,
-			&stock.UpdatedAt,
+			&updatedStock.ID,
+			&updatedStock.PortfolioID,
+			&updatedStock.Symbol,
+			&updatedStock.Shares,
+			&updatedStock.AveragePrice,
+			&updatedStock.CreatedAt,
+			&updatedStock.UpdatedAt,
 		)
 
 		if err != nil {

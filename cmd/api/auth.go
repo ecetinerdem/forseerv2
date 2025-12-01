@@ -101,7 +101,7 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 	if err != nil {
 		app.logger.Errorw("error sending welcome email", "error", err)
 		if err := app.store.Users.DeleteUser(r.Context(), user.ID); err != nil {
-			app.logger.Errorw("error sending welcome email", "error", err)
+			app.logger.Errorw("error deleting user after failed email", "error", err)
 
 		}
 		app.internalServerError(w, r, err)
@@ -119,6 +119,7 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 type CreateUserTokenPayload struct {
 	Username string `json:"username" validate:"required,max=100"`
 	Email    string `json:"email" validate:"required,max=255"`
+	Password string `json:"password" validate:"required,min=8,max=16"`
 }
 
 // createTokenHandler godoc
@@ -160,6 +161,12 @@ func (app *application) createTokenHandler(w http.ResponseWriter, r *http.Reques
 		default:
 			app.internalServerError(w, r, err)
 		}
+		return
+	}
+
+	err = user.Password.Compare(payload.Password)
+	if err != nil {
+		app.unAuthorizedError(w, r, err)
 		return
 	}
 

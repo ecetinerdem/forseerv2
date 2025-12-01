@@ -39,7 +39,7 @@ type UpdatePortfolioPayload struct {
 //	@Router			/portfolios [post]
 func (app *application) createPortfolioHandler(w http.ResponseWriter, r *http.Request) {
 
-	userID := int64(1) // TODO: get from auth
+	user := getUserFromCtx(r)
 
 	var createPortfolio CreatePortfolioPayload
 
@@ -57,8 +57,7 @@ func (app *application) createPortfolioHandler(w http.ResponseWriter, r *http.Re
 	}
 
 	portfolio := &store.Portfolio{
-		//Change after auth
-		UserID: userID,
+		UserID: user.ID,
 		Name:   createPortfolio.Name,
 		Stocks: createPortfolio.Stocks,
 	}
@@ -92,7 +91,7 @@ func (app *application) createPortfolioHandler(w http.ResponseWriter, r *http.Re
 //	@Router			/portfolios [get]
 func (app *application) getPortfoliosHandler(w http.ResponseWriter, r *http.Request) {
 
-	userID := int64(1) // TODO: get from auth
+	user := getUserFromCtx(r)
 
 	pfq := &store.PaginatedFeedQuery{
 		Limit:  5,
@@ -114,7 +113,7 @@ func (app *application) getPortfoliosHandler(w http.ResponseWriter, r *http.Requ
 
 	ctx := r.Context()
 
-	portfolios, err := app.store.Portfolio.GetPortfolios(ctx, userID, pfq)
+	portfolios, err := app.store.Portfolio.GetPortfolios(ctx, user.ID, pfq)
 
 	if err != nil {
 		app.internalServerError(w, r, err)
@@ -143,16 +142,12 @@ func (app *application) getPortfoliosHandler(w http.ResponseWriter, r *http.Requ
 //	@Router			/portfolios/{id} [get]
 func (app *application) getPortfolioHandler(w http.ResponseWriter, r *http.Request) {
 
-	URLPortfolioID := chi.URLParam(r, "portfolioID")
-	portfolioID, err := strconv.ParseInt(URLPortfolioID, 10, 64)
-	if err != nil {
-		app.badRequestError(w, r, err)
-		return
-	}
+	user := getUserFromCtx(r)
+	searchedPortfolio := getPortfolioFromCtx(r)
 
 	ctx := r.Context()
 
-	portfolio, err := app.store.Portfolio.GetPortfolioByID(ctx, portfolioID)
+	portfolio, err := app.store.Portfolio.GetPortfolioByID(ctx, searchedPortfolio.ID, user.ID)
 
 	if err != nil {
 		switch {
@@ -187,7 +182,7 @@ func (app *application) getPortfolioHandler(w http.ResponseWriter, r *http.Reque
 //	@Security		ApiKeyAuth
 //	@Router			/portfolios/search [get]
 func (app *application) searchPortfoliosHandler(w http.ResponseWriter, r *http.Request) {
-	userID := int64(1) // TODO: get from auth
+	user := getUserFromCtx(r)
 
 	searchParam := r.URL.Query().Get("name")
 
@@ -198,7 +193,7 @@ func (app *application) searchPortfoliosHandler(w http.ResponseWriter, r *http.R
 
 	ctx := r.Context()
 
-	portfolios, err := app.store.Portfolio.SearchPortfoliosByName(ctx, userID, searchParam)
+	portfolios, err := app.store.Portfolio.SearchPortfoliosByName(ctx, user.ID, searchParam)
 
 	if err != nil {
 		switch {
@@ -244,6 +239,8 @@ func (app *application) searchPortfoliosHandler(w http.ResponseWriter, r *http.R
 //	@Security		ApiKeyAuth
 //	@Router			/portfolios/{portfolioID} [patch]
 func (app *application) updatePortfolioHandler(w http.ResponseWriter, r *http.Request) {
+
+	user := getUserFromCtx(r)
 	portfolio := getPortfolioFromCtx(r)
 
 	ctx := r.Context()
@@ -266,7 +263,7 @@ func (app *application) updatePortfolioHandler(w http.ResponseWriter, r *http.Re
 		portfolio.Name = updatePortfolioPayload.Name
 	}
 
-	updatedPortfolio, err := app.store.Portfolio.UpdatePortfolio(ctx, portfolio)
+	updatedPortfolio, err := app.store.Portfolio.UpdatePortfolio(ctx, portfolio, user.ID)
 
 	if err != nil {
 		switch {
@@ -305,16 +302,12 @@ func (app *application) updatePortfolioHandler(w http.ResponseWriter, r *http.Re
 //	@Router			/portfolios/{portfolioID} [delete]
 func (app *application) deletePortfolioHandler(w http.ResponseWriter, r *http.Request) {
 
-	URLPortfolioID := chi.URLParam(r, "portfolioID")
-	portfolioID, err := strconv.ParseInt(URLPortfolioID, 10, 64)
-	if err != nil {
-		app.badRequestError(w, r, err)
-		return
-	}
+	user := getUserFromCtx(r)
+	portfolio := getPortfolioFromCtx(r)
 
 	ctx := r.Context()
 
-	err = app.store.Portfolio.DeletePortfolio(ctx, portfolioID)
+	err := app.store.Portfolio.DeletePortfolio(ctx, portfolio.ID, user.ID)
 
 	if err != nil {
 		switch {
@@ -332,7 +325,7 @@ func (app *application) deletePortfolioHandler(w http.ResponseWriter, r *http.Re
 func (app *application) portfoliosContextMiddleware(next http.Handler) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
+		user := getUserFromCtx(r)
 		URLPortfolioID := chi.URLParam(r, "portfolioID")
 		portfolioID, err := strconv.ParseInt(URLPortfolioID, 10, 64)
 		if err != nil {
@@ -342,7 +335,7 @@ func (app *application) portfoliosContextMiddleware(next http.Handler) http.Hand
 
 		ctx := r.Context()
 
-		portfolio, err := app.store.Portfolio.GetPortfolioByID(ctx, portfolioID)
+		portfolio, err := app.store.Portfolio.GetPortfolioByID(ctx, portfolioID, user.ID)
 
 		if err != nil {
 			switch {
@@ -354,7 +347,7 @@ func (app *application) portfoliosContextMiddleware(next http.Handler) http.Hand
 			return
 		}
 		ctx = context.WithValue(ctx, portfolioCtx, portfolio)
-		next.ServeHTTP(w, r)
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 

@@ -103,6 +103,7 @@ func (app *application) mount() *chi.Mux {
 		r.Route("/users", func(r chi.Router) {
 			r.Put("/activate/{token}", app.activateUserHandler)
 			r.Route("/{userID}", func(r chi.Router) {
+				r.Use(app.TokenAuthMiddleware)
 				r.Get("/", app.getUserHandler)
 			})
 		})
@@ -113,6 +114,7 @@ func (app *application) mount() *chi.Mux {
 		})
 
 		r.Route("/portfolios", func(r chi.Router) {
+			r.Use(app.TokenAuthMiddleware)
 			r.Post("/", app.createPortfolioHandler)
 			r.Get("/", app.getPortfoliosHandler)
 			r.Get("/search", app.searchPortfoliosHandler)

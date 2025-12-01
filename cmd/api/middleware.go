@@ -1,11 +1,20 @@
 package main
 
 import (
+	"context"
 	"encoding/base64"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
+
+	"github.com/ecetinerdem/forseerv2/internal/store"
+	"github.com/golang-jwt/jwt/v5"
 )
+
+type userKey string
+
+const userCtx userKey = "user"
 
 func (app *application) BasicAuthMiddleware() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
@@ -18,7 +27,7 @@ func (app *application) BasicAuthMiddleware() func(http.Handler) http.Handler {
 
 			parts := strings.Split(authHeader, " ")
 			if len(parts) != 2 || parts[0] != "Basic" {
-				app.unAuthorizedBasicError(w, r, fmt.Errorf("melformed authorization header"))
+				app.unAuthorizedBasicError(w, r, fmt.Errorf("malformed authorization header"))
 				return
 			}
 
@@ -42,4 +51,54 @@ func (app *application) BasicAuthMiddleware() func(http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 		})
 	}
+}
+
+func (app *application) TokenAuthMiddleware(next http.Handler) http.Handler {
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		authHeader := r.Header.Get("Authorization")
+		if authHeader == "" {
+			app.unAuthorizedError(w, r, fmt.Errorf("missing authorization header"))
+			return
+		}
+
+		parts := strings.Split(authHeader, " ")
+
+		if len(parts) != 2 || parts[0] != "Bearer" {
+			app.unAuthorizedError(w, r, fmt.Errorf("malformed authorization header"))
+			return
+		}
+
+		token := parts[1]
+
+		jwtToken, err := app.authenticator.ValidateToken(token)
+		if err != nil {
+			app.unAuthorizedError(w, r, err)
+			return
+		}
+
+		claims, _ := jwtToken.Claims.(jwt.MapClaims)
+
+		userID, err := strconv.ParseInt(fmt.Sprintf("%.f", claims["sub"]), 10, 64)
+		if err != nil {
+			app.unAuthorizedBasicError(w, r, err)
+			return
+		}
+
+		ctx := r.Context()
+		user, err := app.store.Users.GetUserByID(ctx, userID)
+		if err != nil {
+			app.unAuthorizedBasicError(w, r, err)
+			return
+		}
+
+		ctx = context.WithValue(ctx, userCtx, user)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func getUserFromCtx(r *http.Request) *store.User {
+	user, _ := r.Context().Value(userCtx).(*store.User)
+
+	return user
 }
