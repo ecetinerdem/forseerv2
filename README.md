@@ -37,7 +37,9 @@ Forseer is a modern portfolio management application built with a **Go backend**
 * **Authentication & Authorization:** JWT tokens, Basic Auth
 * **Rate Limiting:** Custom middleware
 * **Logging:** Uber Zap
-* **Env Management:** Custom env loader
+* **Env Management:** direnv
+* **CI/CD:** Github Actions
+* **Containarization** Docker
 
 ## Features
 
@@ -126,6 +128,3 @@ Swagger documentation is available at:
 http://localhost:8080/v1/swagger/index.html
 ```
 
-## License
-
-MIT License
