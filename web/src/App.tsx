@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Eye, EyeOff, Plus, Trash2, Edit2, Search, LogOut } from 'lucide-react';
 
-const API_URL = 'https://forseer-281700746252.europe-west3.run.app';
+const API_URL = 'https://forseer-281700746252.europe-west3.run.app/v1';
 
 /* ========== TYPE DEFINITIONS (mirror Go backend) ========== */
 interface Stock {
