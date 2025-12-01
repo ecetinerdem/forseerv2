@@ -16,7 +16,7 @@ import (
 	"go.uber.org/zap"
 )
 
-const version = "1.0.0"
+const version = ""
 
 //	@title			ForSeer API
 //	@description	A platform for analyze your portfolio with power of AI.
