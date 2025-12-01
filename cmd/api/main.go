@@ -7,6 +7,7 @@ import (
 	"github.com/ecetinerdem/forseerv2/internal/db"
 	"github.com/ecetinerdem/forseerv2/internal/env"
 	"github.com/ecetinerdem/forseerv2/internal/mailer"
+	"github.com/ecetinerdem/forseerv2/internal/ratelimiter"
 	"github.com/ecetinerdem/forseerv2/internal/store"
 	"github.com/ecetinerdem/forseerv2/internal/store/cache"
 	"github.com/redis/go-redis/v9"
@@ -67,6 +68,11 @@ func main() {
 				iss:    env.GetString("AUTH_TOKEN_ISS", "forseer"),
 			},
 		},
+		rateLimiter: ratelimiter.Config{
+			RequestPerTimeFrame: env.GetInt("RATELIMITER_REQUESTS_COUNT", 20),
+			TimeFrame:           time.Second * 5,
+			Enabled:             env.GetBool("RATELIMITER_REQUESTS_COUNT", true),
+		},
 	}
 
 	//Logger
@@ -100,6 +106,12 @@ func main() {
 
 	}
 
+	//RateLimiter
+	rateLimiter := ratelimiter.NewFixedWindowLimiter(
+		cfg.rateLimiter.RequestPerTimeFrame,
+		cfg.rateLimiter.TimeFrame,
+	)
+
 	cacheStorage := cache.NewRedisStorage(rdb)
 
 	app := &application{
@@ -109,6 +121,7 @@ func main() {
 		logger:        logger,
 		mailer:        mailer,
 		authenticator: JWTAuthenticator,
+		rateLimiter:   rateLimiter,
 	}
 
 	mux := app.mount()

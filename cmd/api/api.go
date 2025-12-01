@@ -14,6 +14,7 @@ import (
 	"github.com/ecetinerdem/forseerv2/internal/auth"
 	"github.com/ecetinerdem/forseerv2/internal/env"
 	"github.com/ecetinerdem/forseerv2/internal/mailer"
+	"github.com/ecetinerdem/forseerv2/internal/ratelimiter"
 	"github.com/ecetinerdem/forseerv2/internal/store"
 	"github.com/ecetinerdem/forseerv2/internal/store/cache"
 	"github.com/go-chi/chi/v5"
@@ -30,6 +31,7 @@ type application struct {
 	logger        *zap.SugaredLogger
 	mailer        mailer.Client
 	authenticator auth.Authenticator
+	rateLimiter   ratelimiter.Limiter
 }
 
 type config struct {
@@ -42,6 +44,7 @@ type config struct {
 	frontEndURL string
 	auth        authConfig
 	redisCfg    redisConfig
+	rateLimiter ratelimiter.Config
 }
 
 type dbConfig struct {
@@ -102,7 +105,7 @@ func (app *application) mount() *chi.Mux {
 		AllowCredentials: false,
 		MaxAge:           300, // Maximum value not ignored by any of major browsers
 	}))
-	//r.Use(app.RateLimiterMiddleware)
+	r.Use(app.RateLimiterMiddleware)
 
 	// Set a timeout value on the request context (ctx), that will signal
 	// through ctx.Done() that the request has timed out and further

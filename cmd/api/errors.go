@@ -53,3 +53,9 @@ func (app *application) unAuthorizedBasicError(w http.ResponseWriter, r *http.Re
 	w.Header().Set("WWW-Authenticate", `Basic realm="restricted", charset="UTF-8"`)
 	writeJsonError(w, http.StatusUnauthorized, "unauthorized basic error")
 }
+
+func (app *application) rateLimitExceedResponse(w http.ResponseWriter, r *http.Request, retryAfter string) {
+	app.logger.Warnw("rate limit exceed", "method", r.Method, "path", r.URL.Path)
+	w.Header().Set("Retry-After", retryAfter)
+	writeJsonError(w, http.StatusTooManyRequests, "rate limit exceed, retry after: "+retryAfter)
+}
