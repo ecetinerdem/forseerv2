@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.0](https://github.com/ecetinerdem/forseerv2/compare/v1.6.0...v1.7.0) (2025-12-01)
+
+
+### Features
+
+* talk to backend ([cda1fd7](https://github.com/ecetinerdem/forseerv2/commit/cda1fd75da0eca100adbe852a77bf54d07649284))
+
 ## [1.6.0](https://github.com/ecetinerdem/forseerv2/compare/v1.5.0...v1.6.0) (2025-12-01)
 
 
