@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, Plus, Trash2, Edit2, Search, LogOut } from 'lucide-react';
 
-const API_URL = 'http://localhost:3000/v1';
+const API_URL = 'http://localhost:8080/v1';
 
 export default function App() {
   const [view, setView] = useState('login');
