@@ -122,7 +122,7 @@ export default function App() {
         {view === 'portfolios' && (
           <PortfoliosView
             portfolios={portfolios}
-            setPortfolios={setPortfolios}
+            
             setSelectedPortfolio={setSelectedPortfolio}
             setView={setView}
             token={token}
@@ -331,14 +331,13 @@ function RegisterView({
 /* ================== PORTFOLIOS VIEW ================== */
 function PortfoliosView({
   portfolios,
-  setPortfolios,
   setSelectedPortfolio,
   setView,
   token,
   fetchPortfolios,
 }: {
   portfolios: Portfolio[];
-  setPortfolios: React.Dispatch<React.SetStateAction<Portfolio[]>>;
+  
   setSelectedPortfolio: (p: Portfolio) => void;
   setView: (v: any) => void;
   token: string;
