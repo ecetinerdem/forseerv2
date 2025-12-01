@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.4.0](https://github.com/ecetinerdem/forseerv2/compare/v1.3.0...v1.4.0) (2025-12-01)
+
+
+### Features
+
+* fix port ([760d0d9](https://github.com/ecetinerdem/forseerv2/commit/760d0d998c0a6d1544544c64e75b60969e521a02))
+* fix port ([de935a7](https://github.com/ecetinerdem/forseerv2/commit/de935a766c2d9f2229bbe75cedc9d6efeed8fc0a))
+
 ## [1.3.0](https://github.com/ecetinerdem/forseerv2/compare/v1.2.0...v1.3.0) (2025-12-01)
 
 
