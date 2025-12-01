@@ -3,21 +3,50 @@ import { Eye, EyeOff, Plus, Trash2, Edit2, Search, LogOut } from 'lucide-react';
 
 const API_URL = 'http://localhost:8080/v1';
 
+/* ========== TYPE DEFINITIONS (mirror Go backend) ========== */
+interface Stock {
+  id: number;
+  symbol: string;
+  shares: number;
+  average_price: number;
+  portfolio_id: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+interface Portfolio {
+  id: number;
+  user_id: number;
+  name: string;
+  stocks: Stock[];
+  created_at?: string;
+  updated_at?: string;
+}
+
+interface User {
+  id: number;
+  username: string;
+  email: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+/* ================== MAIN APP COMPONENT ================== */
 export default function App() {
-  const [view, setView] = useState('login');
+  const [view, setView] = useState<'login' | 'register' | 'portfolios' | 'portfolio-detail'>('login');
   const [token, setToken] = useState('');
-  const [user, setUser] = useState(null);
-  const [portfolios, setPortfolios] = useState([]);
-  const [selectedPortfolio, setSelectedPortfolio] = useState(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
+  const [selectedPortfolio, setSelectedPortfolio] = useState<Portfolio | null>(null);
   const [error, setError] = useState('');
 
+  // Load token from localStorage
   useEffect(() => {
     const saved = localStorage.getItem('token');
-    if (saved) {
-      setToken(saved);
-    }
+    if (saved) setToken(saved);
   }, []);
 
+  // Fetch user + portfolios when token changes
   useEffect(() => {
     if (token) {
       fetchUser();
@@ -27,31 +56,34 @@ export default function App() {
 
   const fetchUser = async () => {
     try {
-      const userData = JSON.parse(atob(token.split('.')[1]));
-      const res = await fetch(`${API_URL}/users/${userData.sub}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const res = await fetch(`${API_URL}/users/${payload.sub}`, {
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
-        const data = await res.json();
+        const data: User = await res.json();
         setUser(data);
         setView('portfolios');
+      } else {
+        logout();
       }
-    } catch (err) {
-      console.error(err);
+    } catch (e) {
+      console.error(e);
+      logout();
     }
   };
 
   const fetchPortfolios = async () => {
     try {
       const res = await fetch(`${API_URL}/portfolios`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
-        const data = await res.json();
-        setPortfolios(data || []);
+        const data: Portfolio[] = await res.json();
+        setPortfolios(data);
       }
-    } catch (err) {
-      console.error(err);
+    } catch (e) {
+      console.error(e);
     }
   };
 
@@ -81,11 +113,15 @@ export default function App() {
       </nav>
 
       <div className="max-w-6xl mx-auto px-6 py-8">
-        {view === 'login' && <LoginView setToken={setToken} setView={setView} setError={setError} error={error} />}
-        {view === 'register' && <RegisterView setView={setView} setError={setError} error={error} />}
+        {view === 'login' && (
+          <LoginView setToken={setToken} setView={setView} setError={setError} error={error} />
+        )}
+        {view === 'register' && (
+          <RegisterView setView={setView} setError={setError} error={error} />
+        )}
         {view === 'portfolios' && (
-          <PortfoliosView 
-            portfolios={portfolios} 
+          <PortfoliosView
+            portfolios={portfolios}
             setPortfolios={setPortfolios}
             setSelectedPortfolio={setSelectedPortfolio}
             setView={setView}
@@ -93,12 +129,16 @@ export default function App() {
             fetchPortfolios={fetchPortfolios}
           />
         )}
-        {view === 'portfolio-detail' && (
-          <PortfolioDetail 
+        {view === 'portfolio-detail' && selectedPortfolio && (
+          <PortfolioDetail
             portfolio={selectedPortfolio}
             setView={setView}
             token={token}
             fetchPortfolios={fetchPortfolios}
+            onPortfolioUpdate={(updated) => {
+              setSelectedPortfolio(updated);
+              setPortfolios((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+            }}
           />
         )}
       </div>
@@ -106,7 +146,18 @@ export default function App() {
   );
 }
 
-function LoginView({ setToken, setView, setError, error }) {
+/* ================== LOGIN VIEW ================== */
+function LoginView({
+  setToken,
+  setView,
+  setError,
+  error,
+}: {
+  setToken: (t: string) => void;
+  setView: (v: any) => void;
+  setError: (e: string) => void;
+  error: string;
+}) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -117,17 +168,18 @@ function LoginView({ setToken, setView, setError, error }) {
       const res = await fetch(`${API_URL}/authentication/token`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: '', email, password })
+        body: JSON.stringify({ username: '', email, password }),
       });
       if (res.ok) {
-        const data = await res.json();
-        localStorage.setItem('token', data);
-        setToken(data);
+        const { token } = await res.json();
+        localStorage.setItem('token', token);
+        setToken(token);
       } else {
-        setError('Invalid credentials');
+        const err = await res.text();
+        setError(err || 'Invalid credentials');
       }
-    } catch (err) {
-      setError('Login failed');
+    } catch {
+      setError('Login failed. Please try again.');
     }
   };
 
@@ -155,13 +207,17 @@ function LoginView({ setToken, setView, setError, error }) {
               className="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 focus:outline-none focus:border-cyan-400"
             />
             <button
+              type="button"
               onClick={() => setShowPassword(!showPassword)}
               className="absolute right-3 top-2.5 text-gray-400"
             >
               {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
             </button>
           </div>
-          <button onClick={handleLogin} className="w-full bg-cyan-500 hover:bg-cyan-600 text-white py-2 rounded font-medium">
+          <button
+            onClick={handleLogin}
+            className="w-full bg-cyan-500 hover:bg-cyan-600 text-white py-2 rounded font-medium"
+          >
             Login
           </button>
         </div>
@@ -176,7 +232,16 @@ function LoginView({ setToken, setView, setError, error }) {
   );
 }
 
-function RegisterView({ setView, setError, error }) {
+/* ================== REGISTER VIEW ================== */
+function RegisterView({
+  setView,
+  setError,
+  error,
+}: {
+  setView: (v: any) => void;
+  setError: (e: string) => void;
+  error: string;
+}) {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -190,7 +255,7 @@ function RegisterView({ setView, setError, error }) {
       const res = await fetch(`${API_URL}/authentication/user`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, email, password })
+        body: JSON.stringify({ username, email, password }),
       });
       if (res.ok) {
         setSuccess('Registration successful! Check your email to activate your account.');
@@ -199,7 +264,7 @@ function RegisterView({ setView, setError, error }) {
         const data = await res.json();
         setError(data.error || 'Registration failed');
       }
-    } catch (err) {
+    } catch {
       setError('Registration failed');
     }
   };
@@ -238,13 +303,17 @@ function RegisterView({ setView, setError, error }) {
               maxLength={16}
             />
             <button
+              type="button"
               onClick={() => setShowPassword(!showPassword)}
               className="absolute right-3 top-2.5 text-gray-400"
             >
               {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
             </button>
           </div>
-          <button onClick={handleRegister} className="w-full bg-cyan-500 hover:bg-cyan-600 text-white py-2 rounded font-medium">
+          <button
+            onClick={handleRegister}
+            className="w-full bg-cyan-500 hover:bg-cyan-600 text-white py-2 rounded font-medium"
+          >
             Register
           </button>
         </div>
@@ -259,27 +328,42 @@ function RegisterView({ setView, setError, error }) {
   );
 }
 
-function PortfoliosView({ portfolios, setPortfolios, setSelectedPortfolio, setView, token, fetchPortfolios }) {
+/* ================== PORTFOLIOS VIEW ================== */
+function PortfoliosView({
+  portfolios,
+  setPortfolios,
+  setSelectedPortfolio,
+  setView,
+  token,
+  fetchPortfolios,
+}: {
+  portfolios: Portfolio[];
+  setPortfolios: React.Dispatch<React.SetStateAction<Portfolio[]>>;
+  setSelectedPortfolio: (p: Portfolio) => void;
+  setView: (v: any) => void;
+  token: string;
+  fetchPortfolios: () => Promise<void>;
+}) {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [searchResults, setSearchResults] = useState([]);
+  const [searchResults, setSearchResults] = useState<Portfolio[]>([]);
 
   const handleSearch = async () => {
-    if (!searchTerm) return;
+    if (!searchTerm.trim()) return;
     try {
-      const res = await fetch(`${API_URL}/portfolios/search?name=${searchTerm}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+      const res = await fetch(`${API_URL}/portfolios/search?name=${encodeURIComponent(searchTerm)}`, {
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
-        const data = await res.json();
-        setSearchResults(data || []);
+        const data: Portfolio[] = await res.json();
+        setSearchResults(data);
       }
-    } catch (err) {
-      console.error(err);
+    } catch (e) {
+      console.error(e);
     }
   };
 
-  const displayPortfolios = searchTerm ? searchResults : portfolios;
+  const displayed = searchTerm ? searchResults : portfolios;
 
   return (
     <div>
@@ -306,24 +390,33 @@ function PortfoliosView({ portfolios, setPortfolios, setSelectedPortfolio, setVi
           <Search size={20} />
         </button>
         {searchTerm && (
-          <button onClick={() => { setSearchTerm(''); setSearchResults([]); }} className="text-gray-400 hover:text-white px-4">
+          <button
+            onClick={() => {
+              setSearchTerm('');
+              setSearchResults([]);
+            }}
+            className="text-gray-400 hover:text-white px-4"
+          >
             Clear
           </button>
         )}
       </div>
 
       <div className="grid gap-4">
-        {displayPortfolios.map(portfolio => (
+        {displayed.map((portfolio) => (
           <div
             key={portfolio.id}
-            onClick={() => { setSelectedPortfolio(portfolio); setView('portfolio-detail'); }}
+            onClick={() => {
+              setSelectedPortfolio(portfolio);
+              setView('portfolio-detail');
+            }}
             className="bg-gray-800 border border-gray-700 rounded-lg p-6 hover:border-cyan-400 cursor-pointer transition-colors"
           >
             <h3 className="text-xl font-semibold text-cyan-400 mb-2">{portfolio.name}</h3>
-            <p className="text-gray-400">Stocks: {portfolio.stocks?.length || 0}</p>
+            <p className="text-gray-400">Stocks: {portfolio.stocks.length}</p>
           </div>
         ))}
-        {displayPortfolios.length === 0 && (
+        {displayed.length === 0 && (
           <p className="text-gray-400 text-center py-8">No portfolios found</p>
         )}
       </div>
@@ -339,32 +432,44 @@ function PortfoliosView({ portfolios, setPortfolios, setSelectedPortfolio, setVi
   );
 }
 
-function CreatePortfolioModal({ onClose, token, fetchPortfolios }) {
+/* ================== CREATE PORTFOLIO MODAL ================== */
+function CreatePortfolioModal({
+  onClose,
+  token,
+  fetchPortfolios,
+}: {
+  onClose: () => void;
+  token: string;
+  fetchPortfolios: () => Promise<void>;
+}) {
   const [name, setName] = useState('');
 
   const handleCreate = async () => {
-    if (!name) return;
+    if (!name.trim()) return;
     try {
       const res = await fetch(`${API_URL}/portfolios`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ name, stocks: [] })
+        body: JSON.stringify({ name, stocks: [] }),
       });
       if (res.ok) {
         await fetchPortfolios();
         onClose();
       }
-    } catch (err) {
-      console.error(err);
+    } catch (e) {
+      console.error(e);
     }
   };
 
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-gray-800 rounded-lg p-8 max-w-md w-full mx-4 border border-gray-700" onClick={e => e.stopPropagation()}>
+      <div
+        className="bg-gray-800 rounded-lg p-8 max-w-md w-full mx-4 border border-gray-700"
+        onClick={(e) => e.stopPropagation()}
+      >
         <h3 className="text-2xl font-bold mb-4 text-cyan-400">Create Portfolio</h3>
         <input
           type="text"
@@ -388,28 +493,43 @@ function CreatePortfolioModal({ onClose, token, fetchPortfolios }) {
   );
 }
 
-function PortfolioDetail({ portfolio, setView, token, fetchPortfolios }) {
-  const [stocks, setStocks] = useState(portfolio.stocks || []);
+/* ================== PORTFOLIO DETAIL ================== */
+function PortfolioDetail({
+  portfolio,
+  setView,
+  token,
+  fetchPortfolios,
+  onPortfolioUpdate,
+}: {
+  portfolio: Portfolio;
+  setView: (v: any) => void;
+  token: string;
+  fetchPortfolios: () => Promise<void>;
+  onPortfolioUpdate: (p: Portfolio) => void;
+}) {
+  const [stocks, setStocks] = useState<Stock[]>(portfolio.stocks);
   const [showAddStock, setShowAddStock] = useState(false);
   const [editingName, setEditingName] = useState(false);
   const [newName, setNewName] = useState(portfolio.name);
 
   const handleUpdateName = async () => {
+    if (!newName.trim()) return;
     try {
       const res = await fetch(`${API_URL}/portfolios/${portfolio.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ name: newName })
+        body: JSON.stringify({ name: newName }),
       });
       if (res.ok) {
-        await fetchPortfolios();
+        const updated: Portfolio = await res.json();
+        onPortfolioUpdate(updated);
         setEditingName(false);
       }
-    } catch (err) {
-      console.error(err);
+    } catch (e) {
+      console.error(e);
     }
   };
 
@@ -418,29 +538,29 @@ function PortfolioDetail({ portfolio, setView, token, fetchPortfolios }) {
     try {
       const res = await fetch(`${API_URL}/portfolios/${portfolio.id}`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
         await fetchPortfolios();
         setView('portfolios');
       }
-    } catch (err) {
-      console.error(err);
+    } catch (e) {
+      console.error(e);
     }
   };
 
-  const handleDeleteStock = async (symbol) => {
+  const handleDeleteStock = async (symbol: string) => {
     if (!confirm(`Remove ${symbol}?`)) return;
     try {
       const res = await fetch(`${API_URL}/portfolios/${portfolio.id}/stocks/${symbol}`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
-        setStocks(stocks.filter(s => s.symbol !== symbol));
+        setStocks((prev) => prev.filter((s) => s.symbol !== symbol));
       }
-    } catch (err) {
-      console.error(err);
+    } catch (e) {
+      console.error(e);
     }
   };
 
@@ -493,8 +613,11 @@ function PortfolioDetail({ portfolio, setView, token, fetchPortfolios }) {
       </div>
 
       <div className="grid gap-4">
-        {stocks.map(stock => (
-          <div key={stock.symbol} className="bg-gray-800 border border-gray-700 rounded-lg p-6 flex justify-between items-center">
+        {stocks.map((stock) => (
+          <div
+            key={stock.id}
+            className="bg-gray-800 border border-gray-700 rounded-lg p-6 flex justify-between items-center"
+          >
             <div>
               <h3 className="text-xl font-bold text-cyan-400">{stock.symbol}</h3>
               <p className="text-gray-300">Shares: {stock.shares}</p>
@@ -515,14 +638,25 @@ function PortfolioDetail({ portfolio, setView, token, fetchPortfolios }) {
           portfolioId={portfolio.id}
           onClose={() => setShowAddStock(false)}
           token={token}
-          onStockAdded={(newStock) => setStocks([...stocks, newStock])}
+          onStockAdded={(newStock) => setStocks((prev) => [...prev, newStock])}
         />
       )}
     </div>
   );
 }
 
-function AddStockModal({ portfolioId, onClose, token, onStockAdded }) {
+/* ================== ADD STOCK MODAL ================== */
+function AddStockModal({
+  portfolioId,
+  onClose,
+  token,
+  onStockAdded,
+}: {
+  portfolioId: number;
+  onClose: () => void;
+  token: string;
+  onStockAdded: (s: Stock) => void;
+}) {
   const [symbol, setSymbol] = useState('');
   const [shares, setShares] = useState('');
   const [avgPrice, setAvgPrice] = useState('');
@@ -534,27 +668,30 @@ function AddStockModal({ portfolioId, onClose, token, onStockAdded }) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           symbol: symbol.toUpperCase(),
           shares: parseFloat(shares),
-          average_price: parseFloat(avgPrice)
-        })
+          average_price: parseFloat(avgPrice),
+        }),
       });
       if (res.ok) {
-        const newStock = await res.json();
+        const newStock: Stock = await res.json();
         onStockAdded(newStock);
         onClose();
       }
-    } catch (err) {
-      console.error(err);
+    } catch (e) {
+      console.error(e);
     }
   };
 
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-gray-800 rounded-lg p-8 max-w-md w-full mx-4 border border-gray-700" onClick={e => e.stopPropagation()}>
+      <div
+        className="bg-gray-800 rounded-lg p-8 max-w-md w-full mx-4 border border-gray-700"
+        onClick={(e) => e.stopPropagation()}
+      >
         <h3 className="text-2xl font-bold mb-4 text-cyan-400">Add Stock</h3>
         <div className="space-y-4">
           <input
