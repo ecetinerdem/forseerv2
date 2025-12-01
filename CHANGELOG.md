@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.0](https://github.com/ecetinerdem/forseerv2/compare/v1.2.0...v1.3.0) (2025-12-01)
+
+
+### Features
+
+* add web ([04d9c1b](https://github.com/ecetinerdem/forseerv2/commit/04d9c1b2071e62f41d1de4ca335ebc5bed76bd78))
+* add web ([25f7561](https://github.com/ecetinerdem/forseerv2/commit/25f756122c684c879b40a5960b773f4061f979f2))
+
 ## [1.2.0](https://github.com/ecetinerdem/forseerv2/compare/v1.1.0...v1.2.0) (2025-12-01)
 
 
