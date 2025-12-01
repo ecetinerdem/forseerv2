@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.0](https://github.com/ecetinerdem/forseerv2/compare/v1.4.0...v1.5.0) (2025-12-01)
+
+
+### Features
+
+* app tsx fix ([9f49502](https://github.com/ecetinerdem/forseerv2/commit/9f495025b114f73cfcf324fc31743168db23c710))
+
 ## [1.4.0](https://github.com/ecetinerdem/forseerv2/compare/v1.3.0...v1.4.0) (2025-12-01)
 
 
