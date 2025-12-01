@@ -1,8 +1,13 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/ecetinerdem/forseerv2/docs" //Required for generating swagger docs
@@ -10,6 +15,7 @@ import (
 	"github.com/ecetinerdem/forseerv2/internal/env"
 	"github.com/ecetinerdem/forseerv2/internal/mailer"
 	"github.com/ecetinerdem/forseerv2/internal/store"
+	"github.com/ecetinerdem/forseerv2/internal/store/cache"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
@@ -20,6 +26,7 @@ import (
 type application struct {
 	config        config
 	store         *store.Storage
+	cacheStorage  cache.Storage
 	logger        *zap.SugaredLogger
 	mailer        mailer.Client
 	authenticator auth.Authenticator
@@ -34,6 +41,7 @@ type config struct {
 	apiURL      string
 	frontEndURL string
 	auth        authConfig
+	redisCfg    redisConfig
 }
 
 type dbConfig struct {
@@ -66,6 +74,13 @@ type tokenConfig struct {
 	secret string
 	expiry time.Duration
 	iss    string
+}
+
+type redisConfig struct {
+	addr    string
+	pw      string
+	db      int
+	enabled bool
 }
 
 func (app *application) mount() *chi.Mux {
@@ -152,7 +167,33 @@ func (app *application) run(mux *chi.Mux) error {
 		IdleTimeout:  time.Minute,
 	}
 
+	shutdown := make(chan error)
+
+	go func() {
+		quit := make(chan os.Signal, 1)
+		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+		s := <-quit
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+		defer cancel()
+
+		app.logger.Infow("signal caught", "addr", "signal", s.String())
+		shutdown <- srvr.Shutdown(ctx)
+	}()
+
 	app.logger.Infow("server has started", "addr", app.config.addr, "env", app.config.env)
 
-	return srvr.ListenAndServe()
+	err := srvr.ListenAndServe()
+	if !errors.Is(err, http.ErrServerClosed) {
+		return err
+	}
+
+	err = <-shutdown
+	if err != nil {
+		return err
+	}
+
+	app.logger.Infow("server has stopped", "addr", app.config.addr, "env", app.config.env)
+
+	return nil
 }

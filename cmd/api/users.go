@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"net/http"
+	"strconv"
 
 	"github.com/ecetinerdem/forseerv2/internal/store"
 	"github.com/go-chi/chi/v5"
@@ -24,24 +25,29 @@ import (
 //	@Router			/users/{id} [get]
 func (app *application) getUserHandler(w http.ResponseWriter, r *http.Request) {
 
-	user := getUserFromCtx(r)
-	/*
-		ctx := r.Context()
+	//user := getUserFromCtx(r)
+	userID, err := strconv.ParseInt(chi.URLParam(r, "userID"), 10, 64)
 
-			user, err := app.store.Users.GetUserByID(ctx, user.ID)
+	if err != nil {
+		app.badRequestError(w, r, err)
+		return
+	}
 
-			if err != nil {
-				switch {
-				case errors.Is(err, store.ErrNotFound):
-					app.notFoundError(w, r, err)
-				default:
-					app.internalServerError(w, r, err)
-				}
-				return
-			}
-	*/
+	ctx := r.Context()
 
-	err := app.writeJsonResponse(w, http.StatusOK, user)
+	user, err := app.getUser(ctx, userID)
+
+	if err != nil {
+		switch {
+		case errors.Is(err, store.ErrNotFound):
+			app.notFoundError(w, r, err)
+		default:
+			app.internalServerError(w, r, err)
+		}
+		return
+	}
+
+	err = app.writeJsonResponse(w, http.StatusOK, user)
 	if err != nil {
 		app.internalServerError(w, r, err)
 		return

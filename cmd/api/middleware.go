@@ -86,7 +86,9 @@ func (app *application) TokenAuthMiddleware(next http.Handler) http.Handler {
 		}
 
 		ctx := r.Context()
-		user, err := app.store.Users.GetUserByID(ctx, userID)
+
+		// Check Cache or go db
+		user, err := app.getUser(ctx, userID)
 		if err != nil {
 			app.unAuthorizedBasicError(w, r, err)
 			return
@@ -97,8 +99,35 @@ func (app *application) TokenAuthMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+// for endpoints
 func getUserFromCtx(r *http.Request) *store.User {
 	user, _ := r.Context().Value(userCtx).(*store.User)
 
 	return user
+}
+
+// Check Cache or go db
+func (app *application) getUser(ctx context.Context, userID int64) (*store.User, error) {
+
+	if !app.config.redisCfg.enabled {
+		return app.store.Users.GetUserByID(ctx, userID)
+	}
+
+	user, err := app.cacheStorage.Users.Get(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	if user == nil {
+		user, err = app.store.Users.GetUserByID(ctx, userID)
+		if err != nil {
+			return nil, err
+		}
+		err = app.cacheStorage.Users.Set(ctx, user)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return user, nil
 }

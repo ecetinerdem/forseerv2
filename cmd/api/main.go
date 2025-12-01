@@ -8,6 +8,8 @@ import (
 	"github.com/ecetinerdem/forseerv2/internal/env"
 	"github.com/ecetinerdem/forseerv2/internal/mailer"
 	"github.com/ecetinerdem/forseerv2/internal/store"
+	"github.com/ecetinerdem/forseerv2/internal/store/cache"
+	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 )
 
@@ -38,6 +40,12 @@ func main() {
 			maxOpenConn: env.GetInt("DB_MAX_OPEN_CONN", 30),
 			maxIdleConn: env.GetInt("DB_MAX_IDLE_CONN", 30),
 			maxIdleTime: env.GetString("DB_MAX_IDLE_TIME", "15m"),
+		},
+		redisCfg: redisConfig{
+			addr:    env.GetString("REDIS_ADDR", "localhost:6379"),
+			pw:      env.GetString("REDIS_PW", ""),
+			db:      env.GetInt("REDIS_DB", 0),
+			enabled: env.GetBool("REDIS_ENABLED", false),
 		},
 		env:     env.GetString("ENV", "development"),
 		version: env.GetString("VERSION", "1.0.0"),
@@ -84,9 +92,20 @@ func main() {
 	//JWT Authenticator
 	JWTAuthenticator := auth.NewJWTAuthenticator(cfg.auth.token.secret, cfg.auth.token.iss, cfg.auth.token.iss)
 
+	//Cache
+	var rdb *redis.Client
+	if cfg.redisCfg.enabled {
+		rdb = cache.NewRedisClient(cfg.redisCfg.addr, cfg.redisCfg.pw, cfg.redisCfg.db)
+		logger.Info("redis connection established")
+
+	}
+
+	cacheStorage := cache.NewRedisStorage(rdb)
+
 	app := &application{
 		config:        cfg,
 		store:         store,
+		cacheStorage:  cacheStorage,
 		logger:        logger,
 		mailer:        mailer,
 		authenticator: JWTAuthenticator,

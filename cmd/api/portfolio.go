@@ -143,11 +143,16 @@ func (app *application) getPortfoliosHandler(w http.ResponseWriter, r *http.Requ
 func (app *application) getPortfolioHandler(w http.ResponseWriter, r *http.Request) {
 
 	user := getUserFromCtx(r)
-	searchedPortfolio := getPortfolioFromCtx(r)
+	portfolioID, err := strconv.ParseInt(chi.URLParam(r, "portfolioID"), 10, 64)
+
+	if err != nil {
+		app.badRequestError(w, r, err)
+		return
+	}
 
 	ctx := r.Context()
 
-	portfolio, err := app.store.Portfolio.GetPortfolioByID(ctx, searchedPortfolio.ID, user.ID)
+	portfolio, err := app.getPortfolio(ctx, portfolioID, user.ID)
 
 	if err != nil {
 		switch {
@@ -241,19 +246,31 @@ func (app *application) searchPortfoliosHandler(w http.ResponseWriter, r *http.R
 func (app *application) updatePortfolioHandler(w http.ResponseWriter, r *http.Request) {
 
 	user := getUserFromCtx(r)
-	portfolio := getPortfolioFromCtx(r)
+	portfolioID, err := strconv.ParseInt(chi.URLParam(r, "portfolioID"), 10, 64)
+
+	if err != nil {
+		app.badRequestError(w, r, err)
+		return
+	}
 
 	ctx := r.Context()
 
 	var updatePortfolioPayload UpdatePortfolioPayload
 
-	err := readJson(w, r, &updatePortfolioPayload)
+	err = readJson(w, r, &updatePortfolioPayload)
 	if err != nil {
 		app.badRequestError(w, r, err)
 		return
 	}
 
 	err = Validate.Struct(&updatePortfolioPayload)
+	if err != nil {
+		app.badRequestError(w, r, err)
+		return
+	}
+
+	portfolio, err := app.getPortfolio(ctx, portfolioID, user.ID)
+
 	if err != nil {
 		app.badRequestError(w, r, err)
 		return
@@ -334,8 +351,8 @@ func (app *application) portfoliosContextMiddleware(next http.Handler) http.Hand
 		}
 
 		ctx := r.Context()
-
-		portfolio, err := app.store.Portfolio.GetPortfolioByID(ctx, portfolioID, user.ID)
+		// Check Cache or go db
+		portfolio, err := app.getPortfolio(ctx, portfolioID, user.ID)
 
 		if err != nil {
 			switch {
@@ -355,4 +372,29 @@ func getPortfolioFromCtx(r *http.Request) *store.Portfolio {
 	portfolio, _ := r.Context().Value(portfolioCtx).(*store.Portfolio)
 
 	return portfolio
+}
+
+// Check Cache or go db
+func (app *application) getPortfolio(ctx context.Context, portfolioID int64, userID int64) (*store.Portfolio, error) {
+	if !app.config.redisCfg.enabled {
+		return app.store.Portfolio.GetPortfolioByID(ctx, portfolioID, userID)
+	}
+
+	portfolio, err := app.cacheStorage.Portfolio.Get(ctx, portfolioID)
+	if err != nil {
+		return nil, err
+	}
+
+	if portfolio == nil {
+		portfolio, err = app.store.Portfolio.GetPortfolioByID(ctx, portfolioID, userID)
+		if err != nil {
+			return nil, err
+		}
+		err = app.cacheStorage.Portfolio.Set(ctx, portfolio)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return portfolio, nil
 }
