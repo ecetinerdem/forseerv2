@@ -169,7 +169,7 @@ function LoginView({
       const res = await fetch(`${API_URL}/authentication/token`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: '', email, password }),
+        body: JSON.stringify({ email, password }),
       });
       if (res.ok) {
         const { token } = await res.json();
