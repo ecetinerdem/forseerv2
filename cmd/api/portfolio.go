@@ -40,6 +40,10 @@ type UpdatePortfolioPayload struct {
 func (app *application) createPortfolioHandler(w http.ResponseWriter, r *http.Request) {
 
 	user := getUserFromCtx(r)
+	if user == nil {
+		app.unAuthorizedError(w, r, errors.New("unauthorized"))
+		return
+	}
 
 	var createPortfolio CreatePortfolioPayload
 
@@ -92,6 +96,10 @@ func (app *application) createPortfolioHandler(w http.ResponseWriter, r *http.Re
 func (app *application) getPortfoliosHandler(w http.ResponseWriter, r *http.Request) {
 
 	user := getUserFromCtx(r)
+	if user == nil {
+		app.unAuthorizedError(w, r, errors.New("unauthorized"))
+		return
+	}
 
 	pfq := &store.PaginatedFeedQuery{
 		Limit:  5,
@@ -143,6 +151,10 @@ func (app *application) getPortfoliosHandler(w http.ResponseWriter, r *http.Requ
 func (app *application) getPortfolioHandler(w http.ResponseWriter, r *http.Request) {
 
 	user := getUserFromCtx(r)
+	if user == nil {
+		app.unAuthorizedError(w, r, errors.New("unauthorized"))
+		return
+	}
 	portfolioID, err := strconv.ParseInt(chi.URLParam(r, "portfolioID"), 10, 64)
 
 	if err != nil {
@@ -320,6 +332,10 @@ func (app *application) updatePortfolioHandler(w http.ResponseWriter, r *http.Re
 func (app *application) deletePortfolioHandler(w http.ResponseWriter, r *http.Request) {
 
 	user := getUserFromCtx(r)
+	if user == nil {
+		app.unAuthorizedError(w, r, errors.New("unauthorized"))
+		return
+	}
 	portfolio := getPortfolioFromCtx(r)
 
 	ctx := r.Context()
@@ -343,6 +359,10 @@ func (app *application) portfoliosContextMiddleware(next http.Handler) http.Hand
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		user := getUserFromCtx(r)
+		if user == nil {
+			app.unAuthorizedError(w, r, errors.New("unauthorized"))
+			return
+		}
 		URLPortfolioID := chi.URLParam(r, "portfolioID")
 		portfolioID, err := strconv.ParseInt(URLPortfolioID, 10, 64)
 		if err != nil {
