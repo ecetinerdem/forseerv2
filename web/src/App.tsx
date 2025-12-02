@@ -172,7 +172,12 @@ function LoginView({
         body: JSON.stringify({ email, password }),
       });
       if (res.ok) {
-        const { token } = await res.json();
+        const data  = await res.json();
+        const token = typeof data === 'string' ? data : data.token;
+        if (!token) {
+          setError('Login failed: no token received');
+          return;
+        }
         localStorage.setItem('token', token);
         setToken(token);
       } else {

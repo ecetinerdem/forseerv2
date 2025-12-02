@@ -129,7 +129,7 @@ type CreateUserTokenPayload struct {
 //	@Accept			json
 //	@Produce		json
 //	@Param			payload	body		CreateUserTokenPayload	true	"User credentials"
-//	@Success		200		{string}	string					"Token"
+//	@Success		200		{object}	TokenResponse					"Token"
 //	@Failure		400		{object}	error
 //	@Failure		401		{object}	error
 //	@Failure		500		{object}	error
@@ -184,7 +184,11 @@ func (app *application) createTokenHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	if err := app.writeJsonResponse(w, http.StatusCreated, token); err != nil {
+	type TokenResponse struct {
+		Token string `json:"token"`
+	}
+
+	if err := app.writeJsonResponse(w, http.StatusOK, TokenResponse{Token: token}); err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}
