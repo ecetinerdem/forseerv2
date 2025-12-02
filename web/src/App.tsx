@@ -368,7 +368,9 @@ function PortfoliosView({
     }
   };
 
-  const displayed = searchTerm ? searchResults : portfolios;
+  const displayed = searchTerm 
+  ? (Array.isArray(searchResults) ? searchResults : [])
+  : (Array.isArray(portfolios) ? portfolios : []);
 
   return (
     <div>
