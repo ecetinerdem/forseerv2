@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.0](https://github.com/ecetinerdem/forseerv2/compare/v1.8.0...v1.9.0) (2025-12-02)
+
+
+### Features
+
+* add vercel.json ([d44b708](https://github.com/ecetinerdem/forseerv2/commit/d44b708c264048bcd732ca1cf1f5aed1f7fdfe57))
+
 ## [1.8.0](https://github.com/ecetinerdem/forseerv2/compare/v1.7.0...v1.8.0) (2025-12-02)
 
 
