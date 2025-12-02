@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.0](https://github.com/ecetinerdem/forseerv2/compare/v1.7.0...v1.8.0) (2025-12-02)
+
+
+### Features
+
+* add confirmation page ([ed4d016](https://github.com/ecetinerdem/forseerv2/commit/ed4d016a6d07abb1460383144a599c3e1ad11b70))
+
 ## [1.7.0](https://github.com/ecetinerdem/forseerv2/compare/v1.6.0...v1.7.0) (2025-12-01)
 
 
