@@ -77,9 +77,19 @@ func (app *application) TokenAuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		claims, _ := jwtToken.Claims.(jwt.MapClaims)
+		claims, ok := jwtToken.Claims.(jwt.MapClaims)
+		if !ok || claims == nil {
+			app.unAuthorizedError(w, r, fmt.Errorf("invalid token claims"))
+			return
+		}
 
-		userID, err := strconv.ParseInt(fmt.Sprintf("%.f", claims["sub"]), 10, 64)
+		subRaw, ok := claims["sub"]
+		if !ok {
+			app.unAuthorizedError(w, r, fmt.Errorf("missing sub claim"))
+			return
+		}
+
+		userID, err := strconv.ParseInt(fmt.Sprintf("%.f", subRaw), 10, 64)
 		if err != nil {
 			app.unAuthorizedBasicError(w, r, err)
 			return
