@@ -2,6 +2,17 @@ import { useState, useEffect } from 'react';
 import { Eye, EyeOff, Plus, Trash2, Edit2, Search, LogOut } from 'lucide-react';
 
 export const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/v1"
+const api = (path: string, init?: RequestInit) => {
+  const token = localStorage.getItem('token') || '';
+  return fetch(`${API_URL}${path}`, {
+    ...init,
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+      ...init?.headers,
+    },
+  });
+};
 
 
 /* ========== TYPE DEFINITIONS (mirror Go backend) ========== */
@@ -31,6 +42,8 @@ interface User {
   created_at?: string;
   updated_at?: string;
 }
+
+
 
 /* ================== MAIN APP COMPONENT ================== */
 export default function App() {
@@ -76,9 +89,7 @@ export default function App() {
 
   const fetchPortfolios = async () => {
     try {
-      const res = await fetch(`${API_URL}/portfolios`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await api('/portfolios');
       if (res.ok) {
         const data: Portfolio[] = await res.json();
         setPortfolios(data);
@@ -454,14 +465,10 @@ function CreatePortfolioModal({
   const handleCreate = async () => {
     if (!name.trim()) return;
     try {
-      const res = await fetch(`${API_URL}/portfolios`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ name, stocks: [] }),
-      });
+      const res = await api('/portfolios', {
+    method: 'POST',
+    body: JSON.stringify({ name: name.trim() }), // ← removed stocks: []
+  });
       if (res.ok) {
         await fetchPortfolios();
         onClose();
@@ -522,14 +529,10 @@ function PortfolioDetail({
   const handleUpdateName = async () => {
     if (!newName.trim()) return;
     try {
-      const res = await fetch(`${API_URL}/portfolios/${portfolio.id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+      const res = await api(`/portfolios/${portfolio.id}`, {
+         method: 'PATCH',
         body: JSON.stringify({ name: newName }),
-      });
+        });
       if (res.ok) {
         const updated: Portfolio = await res.json();
         onPortfolioUpdate(updated);
@@ -559,10 +562,9 @@ function PortfolioDetail({
   const handleDeleteStock = async (symbol: string) => {
     if (!confirm(`Remove ${symbol}?`)) return;
     try {
-      const res = await fetch(`${API_URL}/portfolios/${portfolio.id}/stocks/${symbol}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await api(`/portfolios/${portfolio.id}/stocks/${symbol}`, {
+  method: 'DELETE',
+});
       if (res.ok) {
         setStocks((prev) => prev.filter((s) => s.symbol !== symbol));
       }
@@ -671,18 +673,14 @@ function AddStockModal({
   const handleAdd = async () => {
     if (!symbol || !shares || !avgPrice) return;
     try {
-      const res = await fetch(`${API_URL}/portfolios/${portfolioId}/stocks`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          symbol: symbol.toUpperCase(),
-          shares: parseFloat(shares),
-          average_price: parseFloat(avgPrice),
-        }),
-      });
+      const res = await api(`/portfolios/${portfolioId}/stocks`, {
+  method: 'POST',
+  body: JSON.stringify({
+    symbol: symbol.toUpperCase(),
+    shares: parseFloat(shares),
+    average_price: parseFloat(avgPrice),
+  }),
+});
       if (res.ok) {
         const newStock: Stock = await res.json();
         onStockAdded(newStock);
